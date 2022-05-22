@@ -1,5 +1,6 @@
-from flask import Flask, render_template
-from session import session_start
+from flask import Flask, jsonify, render_template
+from session import session_start, get_ap_list
+import subprocess
 
 app = Flask(__name__)
 
@@ -15,6 +16,10 @@ def session():
 def session_start_api():
     session_start()
     return '', 200
+
+@app.route('/session/get_ap')
+def session_get_ap():
+    return jsonify(get_ap_list())
 
 if __name__ == '__main__':
     app.run(port=5000, debug='true')
