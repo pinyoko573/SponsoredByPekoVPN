@@ -1,6 +1,5 @@
-from flask import Flask, jsonify, render_template
-from session import session_start, get_ap_list
-import subprocess
+from flask import Flask, jsonify, render_template, request
+from session import session_start, get_ap_list, get_client_list
 
 app = Flask(__name__)
 
@@ -20,6 +19,11 @@ def session_start_api():
 @app.route('/session/get_ap')
 def session_get_ap():
     return jsonify(get_ap_list())
+
+@app.route('/session/get_client')
+def session_get_client():
+    ap_mac = request.args.get('mac')
+    return jsonify(get_client_list(ap_mac))
 
 if __name__ == '__main__':
     app.run(port=5000, debug='true')
