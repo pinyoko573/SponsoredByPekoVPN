@@ -9,12 +9,17 @@ def index():
 
 @app.route('/session')
 def session():
-    return render_template('session.html')
+    return render_template('session/session_index.html')
 
-@app.route('/session/start')
-def session_start_api():
-    session_start()
-    return '', 200
+@app.route('/session/create', methods=['GET', 'POST'])
+def session_create():
+    if request.method == 'GET':
+        return render_template('session/session_create.html')
+
+# @app.route('/session/start')
+# def session_start_api():
+#     session_start()
+#     return '', 200
 
 @app.route('/session/get_ap')
 def session_get_ap():
