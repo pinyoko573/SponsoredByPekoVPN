@@ -16,16 +16,20 @@ def session_stop(pid):
     os.kill(pid, signal.SIGINT)
 
 def get_ap_list():
-    # Retrieves AP channel using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    sleep(5)
-    process.send_signal(signal.SIGINT)
-    process.kill()
+    # if os.path.exists('ap-01.csv'):
+    #     os.remove('ap-01.csv')
+    # # Retrieves AP channel using airodump and output into csv
+    # process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
+    # sleep(3)
+    # process.send_signal(signal.SIGINT)
+    # process.kill()
 
     # Convert csv to json
     ap_list = csv_to_json('ap-01.csv', 0)
-    os.remove('ap-01.csv')
-    return ap_list
+    for i in ap_list:
+        i['ESSID'] = i['ESSID'][:-1]
+        
+    return { 'data': ap_list }
 
 def get_client_list(ap_mac):
     # Retrieves list of clients communicating with AP using airodump and output into csv
@@ -35,8 +39,8 @@ def get_client_list(ap_mac):
     process.kill()
 
     # Convert csv to json
-    client_list = csv_to_json('ap-01.csv', 1)
-    os.remove('ap-01.csv')
+    client_list = csv_to_json('ap-02.csv', 1)
+    os.remove('ap-02.csv')
     return client_list
 
 def force_eapol_handshake(client_mac, ap_mac):
