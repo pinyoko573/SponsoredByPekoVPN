@@ -32,16 +32,18 @@ def get_ap_list():
     return { 'data': ap_list }
 
 def get_client_list(ap_mac):
-    # Retrieves list of clients communicating with AP using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    sleep(5) # Time (in seconds) to stop the AP capture
-    process.send_signal(signal.SIGINT)
-    process.kill()
+    # if os.path.exists('ap_mac-01.csv'):
+    #     os.remove('ap_mac-01.csv')
+    # # Retrieves list of clients communicating with AP using airodump and output into csv
+    # process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
+    # sleep(5) # Time (in seconds) to stop the AP capture
+    # process.send_signal(signal.SIGINT)
+    # process.kill()
 
     # Convert csv to json
-    client_list = csv_to_json('ap-02.csv', 1)
-    os.remove('ap-02.csv')
-    return client_list
+    client_list = csv_to_json('ap_mac-01.csv', 1)
+
+    return { 'data': client_list }
 
 def force_eapol_handshake(client_mac, ap_mac):
     # Filter and capture EAPOL handshake using tcpdump

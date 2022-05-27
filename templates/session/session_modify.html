@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+{% include 'header.html' %}
+
+<body>
+  <div id="wrapper">
+    {% include 'sidebar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <section id="content">
+        <div class="container-fluid mt-3">
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h5 class="m-0 font-weight-bold text-primary">Modify Session</h6>
+            </div>
+            <div class="card-body">
+              <p>Select the AP that you wish to scan.</p>
+              <div class="table-responsive">
+                <table id="table_id" class="display">
+                    <thead>
+                        <tr>
+                            <th>Device Name</th>
+                            <th>MAC</th>
+                            <th>Packets captured (10s)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      
+      {% include 'footer.html' %}
+    </div>
+  </div>
+</body>
+
+<script>
+    var table;
+
+    $(document).ready(function() {
+        table = $('#table_id').DataTable({
+          ajax: '/session/get_client',
+          autoWidth: false,
+          columns: [
+            { data: null },
+            { data: "Station MAC" },
+            { data: "# packets" },
+            { data: null }
+          ]
+        });
+    });
+</script>

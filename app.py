@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from session import session_start, get_ap_list, get_client_list
 
 app = Flask(__name__)
@@ -16,7 +16,13 @@ def session_create():
     if request.method == 'GET':
         return render_template('session/session_create.html')
     elif request.method == 'POST':
-        print(request.data)
+        # Received headers: passphrase, apInfo
+        # Stores information to database and redirect to modify page
+        return redirect(url_for('session_modify', session_id = 1))
+
+@app.route('/session/modify/<session_id>')
+def session_modify(session_id):
+    return render_template('session/session_modify.html', session_id=session_id)
 
 # @app.route('/session/start')
 # def session_start_api():
