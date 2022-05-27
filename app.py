@@ -15,6 +15,8 @@ def session():
 def session_create():
     if request.method == 'GET':
         return render_template('session/session_create.html')
+    elif request.method == 'POST':
+        print(request.data)
 
 # @app.route('/session/start')
 # def session_start_api():

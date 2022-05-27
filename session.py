@@ -16,13 +16,13 @@ def session_stop(pid):
     os.kill(pid, signal.SIGINT)
 
 def get_ap_list():
-    if os.path.exists('ap-01.csv'):
-        os.remove('ap-01.csv')
-    # Retrieves AP channel using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    sleep(3)
-    process.send_signal(signal.SIGINT)
-    process.kill()
+    # if os.path.exists('ap-01.csv'):
+    #     os.remove('ap-01.csv')
+    # # Retrieves AP channel using airodump and output into csv
+    # process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
+    # sleep(3)
+    # process.send_signal(signal.SIGINT)
+    # process.kill()
 
     # Convert csv to json
     ap_list = csv_to_json('ap-01.csv', 0)
