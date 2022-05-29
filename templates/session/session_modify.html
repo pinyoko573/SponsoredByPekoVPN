@@ -41,6 +41,17 @@
       {% include 'footer.html' %}
     </div>
   </div>
+
+  <!-- Jinja code to display success message after creating session -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <script>
+          toastr.success("{{ message }}")
+        </script>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 </body>
 
 <script>
@@ -83,15 +94,19 @@
         method: "POST",
         headers: { client_mac: data['Station MAC'], ap_mac: data['BSSID'] },
         success: function(result) {
-          if (result) {
+          if (result.output) {
             $(this).removeClass('btn-info')
             $(this).addClass('btn-success');
             $(this).text('Force Handshake');
+
+            toastr.success(result.message)
           } else {
             $(this).text('Force Handshake');
             $(this).removeClass('btn-info')
             $(this).addClass('btn-primary');
             $(this).prop('disabled', false);
+
+            toastr.error(result.message)
           }
         }
       })
