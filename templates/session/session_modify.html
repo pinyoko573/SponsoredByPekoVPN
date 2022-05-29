@@ -83,6 +83,7 @@
     });
 
     $('#table_id tbody').on('click', 'button', function() {
+      var button = $(this);
       $(this).text('Communicating..');
       $(this).removeClass('btn-primary')
       $(this).addClass('btn-info');
@@ -95,16 +96,16 @@
         headers: { client_mac: data['Station MAC'], ap_mac: data['BSSID'] },
         success: function(result) {
           if (result.output) {
-            $(this).removeClass('btn-info')
-            $(this).addClass('btn-success');
-            $(this).text('Force Handshake');
+            button.removeClass('btn-info')
+            button.addClass('btn-success');
+            button.text('Captured Successful');
 
             toastr.success(result.message)
           } else {
-            $(this).text('Force Handshake');
-            $(this).removeClass('btn-info')
-            $(this).addClass('btn-primary');
-            $(this).prop('disabled', false);
+            button.text('Force Handshake');
+            button.removeClass('btn-info')
+            button.addClass('btn-primary');
+            button.prop('disabled', false);
 
             toastr.error(result.message)
           }

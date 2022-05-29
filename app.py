@@ -32,7 +32,7 @@ def session_modify(session_id):
         if output == True:
             return jsonify({'output': True, 'message': messages.handshake_success})
         else:
-            return jsonify({'output': True, 'message': messages.handshake_failed})
+            return jsonify({'output': False, 'message': messages.handshake_failed})
 
 @app.route('/session/get_ap')
 def session_get_ap():
