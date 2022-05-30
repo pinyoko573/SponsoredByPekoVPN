@@ -1,6 +1,7 @@
 from time import sleep
 from utils import csv_to_json
 from subprocess import Popen, PIPE
+from mac_vendor_lookup import MacLookup
 import signal
 import os
 
@@ -16,13 +17,14 @@ def session_stop(pid):
     os.kill(pid, signal.SIGINT)
 
 def get_ap_list():
-    # if os.path.exists('ap-01.csv'):
-    #     os.remove('ap-01.csv')
-    # # Retrieves AP channel using airodump and output into csv
-    # process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    # sleep(3)
-    # process.send_signal(signal.SIGINT)
-    # process.kill()
+    if os.path.exists('ap-01.csv'):
+        os.remove('ap-01.csv')
+    # Retrieves AP channel using airodump and output into csv
+    process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
+    sleep(5)
+    process.terminate()
+    process.kill()
+    process.wait()
 
     # Convert csv to json
     ap_list = csv_to_json('ap-01.csv', 0)
@@ -32,16 +34,29 @@ def get_ap_list():
     return { 'data': ap_list }
 
 def get_client_list(ap_mac):
+    ap_mac = 'AC:9E:17:93:BE:78' #HARDCODE
+    if os.path.exists('ap_mac-01.csv'):
+        os.remove('ap_mac-01.csv')
     # Retrieves list of clients communicating with AP using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    sleep(5) # Time (in seconds) to stop the AP capture
-    process.send_signal(signal.SIGINT)
+    process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
+    sleep(10) # Time (in seconds) to stop the AP capture
+    process.terminate()
     process.kill()
+    process.wait()
 
     # Convert csv to json
-    client_list = csv_to_json('ap-02.csv', 1)
-    os.remove('ap-02.csv')
-    return client_list
+    client_list = csv_to_json('ap_mac-01.csv', 1)
+    for client in client_list:
+        vendor = ''
+        try:
+            vendor = MacLookup().lookup(client['Station MAC'])
+        except:
+            vendor = 'Unknown'
+        
+        client['vendor'] = vendor
+        client['BSSID'] = client['BSSID'][:-1]
+
+    return { 'data': client_list }
 
 def force_eapol_handshake(client_mac, ap_mac):
     # Filter and capture EAPOL handshake using tcpdump
@@ -53,6 +68,7 @@ def force_eapol_handshake(client_mac, ap_mac):
     sleep(15) # Time (in seconds) to stop the tcpdump
     process.send_signal(signal.SIGINT)
     (), stderr = process.communicate()
+    process.terminate()
     process.kill()
 
     # Use string of stderr to find the number of packets captured
@@ -62,6 +78,6 @@ def force_eapol_handshake(client_mac, ap_mac):
     print('{} eapol packets captured'.format(no_eapol_packets))
     # Only return success if number of eapol packets > 4
     if no_eapol_packets >= 4:
-        return 1
+        return True
     else:
-        return 0
+        return False

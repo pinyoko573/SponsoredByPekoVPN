@@ -10,20 +10,25 @@
         <div class="container-fluid mt-3">
           <div class="card shadow mb-4">
             <div class="card-header py-3">
-              <h5 class="m-0 font-weight-bold text-primary">Create Session</h6>
+              <h5 class="m-0 font-weight-bold text-primary">Create Session (Select Access Point)</h6>
             </div>
             <div class="card-body">
-              <p>Select the AP that you wish to scan.</p>
+              <span class="float-left">
+                <p>
+                  <b>Highlight</b> the row of the Access Point that you wish to analyse, then input the passphrase and click on Submit.<br>
+                  Note that if the wrong passphrase is entered, you would need to delete and recreate the session.
+                </p>
+              </span>
               <button type="button" class="btn btn-primary float-right mb-2" id="refreshButton">Refresh</button>
               <div class="table-responsive">
                 <table id="table_id" class="display">
                     <thead>
-                        <tr>
-                            <th>SSID</th>
-                            <th>MAC</th>
-                            <th>Privacy</th>
-                            <th>Channel</th>
-                        </tr>
+                      <tr>
+                        <th>SSID</th>
+                        <th>MAC</th>
+                        <th>Privacy</th>
+                        <th>Channel</th>
+                      </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -37,7 +42,7 @@
                   <input type="password" class="form-control" name="passphrase" placeholder="Leave blank if Privacy is OPN" aria-describedby="basic-addon1">
                 </div>
                 <div class="mb-3 mt-3 float-right">
-                  <input type="submit" class="btn btn-success disabled" id="submitButton" value="Submit">
+                  <input type="submit" class="btn btn-success disabled" id="submitButton" value="Submit" disabled>
                 </div>
                 <input type="text" name="apInfo" id="apInfoInput" hidden>
               </form>
@@ -76,10 +81,12 @@
       if ($(this).hasClass('selected')) {
             $(this).removeClass('selected');
             $('#submitButton').addClass('disabled');
+            $('#submitButton').prop('disabled', true);
         } else {
             table.$('tr.selected').removeClass('selected');
             $(this).addClass('selected');
             $('#submitButton').removeClass('disabled');
+            $('#submitButton').prop('disabled', false);
             $('#apInfoInput').val(JSON.stringify(table.rows('.selected').data()[0]));
         }
     });

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+{% include 'header.html' %}
+
+<body>
+  <div id="wrapper">
+    {% include 'sidebar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+      <section id="content">
+        <div class="container-fluid mt-3">
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h5 class="m-0 font-weight-bold text-primary">Modify Session (Select targeted clients)</h6>
+            </div>
+            <div class="card-body">
+              <span class="float-left">
+                <p>
+                  Select the client you wish to probe on.<br>
+                  As the adapter may not pick up all the packets, you may need to force the handshake multiple times.
+                </p>
+              </span>
+              <button type="button" class="btn btn-primary float-right mb-2" id="refreshButton">Refresh</button>
+              <div class="table-responsive">
+                <table id="table_id" class="display">
+                    <thead>
+                        <tr>
+                            <th>MAC</th>
+                            <th>Vendor</th>
+                            <th>Packets captured (10s)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      
+      {% include 'footer.html' %}
+    </div>
+  </div>
+
+  <!-- Jinja code to display success message after creating session -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <script>
+          toastr.success("{{ message }}")
+        </script>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</body>
+
+<script>
+    var table;
+
+    $(document).ready(function() {
+        table = $('#table_id').DataTable({
+          ajax: '/session/get_client',
+          autoWidth: false,
+          columns: [
+            { data: "Station MAC" },
+            { data: "vendor" },
+            { data: "# packets" },
+            { data: null,
+              render: function(data, type, row) {
+                if (true)
+                  return '<button type="button" class="btn btn-primary">Force Handshake</button>'
+                else
+                  return '<button type="button" class="btn btn-success">Success/button>'
+              },
+              sorting: false
+            }
+          ]
+        });
+    });
+
+    $('#refreshButton').on('click', function(event) {
+      table.ajax.reload();
+    });
+
+    $('#table_id tbody').on('click', 'button', function() {
+      var button = $(this);
+      $(this).text('Communicating..');
+      $(this).removeClass('btn-primary')
+      $(this).addClass('btn-info');
+      $(this).prop('disabled', true);
+
+      var data = table.row($(this).parents('tr')).data();
+      $.ajax({
+        url: "",
+        method: "POST",
+        headers: { client_mac: data['Station MAC'], ap_mac: data['BSSID'] },
+        success: function(result) {
+          if (result.output) {
+            button.removeClass('btn-info')
+            button.addClass('btn-success');
+            button.text('Captured Successful');
+
+            toastr.success(result.message)
+          } else {
+            button.text('Force Handshake');
+            button.removeClass('btn-info')
+            button.addClass('btn-primary');
+            button.prop('disabled', false);
+
+            toastr.error(result.message)
+          }
+        }
+      })
+    });
+</script>
