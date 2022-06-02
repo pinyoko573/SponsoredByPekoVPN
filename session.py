@@ -5,12 +5,19 @@ from mac_vendor_lookup import MacLookup
 import signal
 import os
 
+from models import Session
+from database import db_session
+
 def session_start(ap_mac):
     # Starts capturing all the wifi packets that has communicated with AP using tcpdump
     expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
     process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', 'sample.cap', expression], stdin=PIPE, stdout=PIPE)
     print(process.pid)
-    return process.pid
+
+    # session_test = Session(mac='AC:12:34:56:78:90', essid='haha')
+    # db_session.add(session_test)
+    # db_session.commit()
+    # return process.pid
 
 def session_stop(pid):
     # Terminate tcpdump
@@ -81,3 +88,5 @@ def force_eapol_handshake(client_mac, ap_mac):
         return True
     else:
         return False
+
+session_start(123)

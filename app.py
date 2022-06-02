@@ -1,7 +1,12 @@
-from curses import A_ALTCHARSET
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
 from session import session_start, get_ap_list, get_client_list, force_eapol_handshake
 import messages
+
+from models import *
+from database import engine, Base
+
+# Only use this when you want to create table!
+# Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
 
