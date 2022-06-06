@@ -59,7 +59,13 @@
 
     $(document).ready(function() {
         table = $('#table_id').DataTable({
-          ajax: '/session/get_client',
+          ajax: {
+            'type': 'GET',
+            'url': '/session/get_client',
+            'data': {
+              session_id: JSON.parse('{{ session_id | tojson }}')
+            }
+          },
           autoWidth: false,
           columns: [
             { data: "Station MAC" },
@@ -93,7 +99,7 @@
       $.ajax({
         url: "",
         method: "POST",
-        headers: { client_mac: data['Station MAC'], ap_mac: data['BSSID'] },
+        headers: { client_data: JSON.stringify(data) },
         success: function(result) {
           if (result.output) {
             button.removeClass('btn-info')

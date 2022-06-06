@@ -1,20 +1,53 @@
 from time import sleep
 from utils import csv_to_json
 from subprocess import Popen, PIPE
+from datetime import datetime
 from mac_vendor_lookup import MacLookup
 import signal
 import os
+import json
 
-def session_start(ap_mac):
-    # Starts capturing all the wifi packets that has communicated with AP using tcpdump
-    expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
-    process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', 'sample.cap', expression], stdin=PIPE, stdout=PIPE)
-    print(process.pid)
-    return process.pid
+from models import Session, SessionClient
+from database import db_session
 
-def session_stop(pid):
-    # Terminate tcpdump
-    os.kill(pid, signal.SIGINT)
+def session_start(apInfo, passphrase):
+    try:
+        # Starts capturing all the wifi packets that has communicated with AP using tcpdump
+        apInfo = json.loads(apInfo)
+        ap_mac = apInfo['BSSID']
+        expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
+        process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', 'sample.cap', expression], stdin=PIPE, stdout=PIPE)
+
+        # Stores the information into database
+        newSession_obj = Session(mac=ap_mac, essid=apInfo['ESSID'], channel=apInfo['channel'], cipher=apInfo['Cipher'], authentication=apInfo['Authentication'], passphrase=passphrase, processid=process.pid, is_active=True, date_created=datetime.now())
+        db_session.add(newSession_obj)
+        db_session.commit()
+
+        db_session.refresh(newSession_obj)
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return -1
+    else:
+        db_session.close()
+        return newSession_obj.id
+
+def session_stop(session_id):
+    try:
+        # Get the record from session table and update the active and date_ended
+        session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+        session_obj.is_active = False
+        session_obj.date_ended = datetime.now()
+
+        # Terminate tcpdump with the processid from session table
+        os.kill(session_obj.processid, signal.SIGINT)
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return False
+    else:
+        db_session.close()
+        return True
 
 def get_ap_list():
     if os.path.exists('ap-01.csv'):
@@ -33,8 +66,9 @@ def get_ap_list():
         
     return { 'data': ap_list }
 
-def get_client_list(ap_mac):
-    ap_mac = 'AC:9E:17:93:BE:78' #HARDCODE
+def get_client_list(session_id):
+    session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+    ap_mac = session_obj.mac
     if os.path.exists('ap_mac-01.csv'):
         os.remove('ap_mac-01.csv')
     # Retrieves list of clients communicating with AP using airodump and output into csv
@@ -56,9 +90,20 @@ def get_client_list(ap_mac):
         client['vendor'] = vendor
         client['BSSID'] = client['BSSID'][:-1]
 
+
+    db_session.close()
     return { 'data': client_list }
 
-def force_eapol_handshake(client_mac, ap_mac):
+def force_eapol_handshake(session_id, client_data):
+    # Retrieves AP MAC
+    session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+    ap_mac = session_obj.mac
+    client_data = json.loads(client_data)
+    client_mac = client_data['Station MAC']
+
+    # Switches channel of wireless adapter
+    Popen(['iwconfig', 'wlan0', 'channel', str(session_obj.channel)], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
     # Filter and capture EAPOL handshake using tcpdump
     expression = 'ether proto 0x888e and (wlan addr1 '+ap_mac+' or wlan addr1 '+client_mac+')'
     process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-vvv', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
@@ -77,7 +122,15 @@ def force_eapol_handshake(client_mac, ap_mac):
 
     print('{} eapol packets captured'.format(no_eapol_packets))
     # Only return success if number of eapol packets > 4
+    # This portion needs to be replaced with pyrit
     if no_eapol_packets >= 4:
+        # Adds client into SessionClient table
+        newSessionClient_obj = SessionClient(session_id=session_obj.id, mac=client_mac, vendor=client_data['vendor'], is_ap=False)
+        db_session.add(newSessionClient_obj)
+        db_session.commit()
+
+        db_session.close()
         return True
     else:
+        db_session.close()
         return False
