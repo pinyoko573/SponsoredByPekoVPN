@@ -11,6 +11,7 @@ class Session(Base):
     cipher = Column(String)
     authentication = Column(String)
     passphrase = Column(String)
+    processid = Column(Integer)
     is_active = Column(Boolean)
     date_created = Column(DateTime)
     date_ended = Column(DateTime)
