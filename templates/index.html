@@ -1,16 +1,68 @@
 <!DOCTYPE html>
 {% include 'header.html' %}
 
-<body>
-  <div id="wrapper">
-    {% include 'sidebar.html' %}
-    <div id="content-wrapper" class="d-flex flex-column">
+<style>
+    .center {
+        margin: auto;
+        width: 60%;
+        border: 2px solid #924CF3;
+        padding: 10px;
+    }
 
-      <section id="content">
-        
-      </section>
-      
-      {% include 'footer.html' %}
+    .funfactbutton {
+        border: 2px solid #32989C;
+        color: darkorange;
+        float: right
+    }
+</style>
+<body>
+    <div id="wrapper">
+        {% include 'sidebar.html' %}
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div class="center" id="funfactbox">
+                <p style="margin-bottom: 6px;">
+                    <b> Did you know?</b>
+                    <button class="funfactbutton" onclick="NewFact(0.091)">Click for a random fun fact!</button> <br>
+                </p>
+                <p id="RNGesus">
+                    How are you seeing this?
+                </p>
+            </div>
+
+            <script>
+                const facts = [
+                    "First Fact",
+                    "Second Fact",
+                    "3rd",
+                    "4th",
+                    "55555",
+                    "6/6 shopee sale",
+                    "aaaa7",
+                    "88 huat",
+                    "9",
+                    "last fact",
+                    "Secret easter egg fact that only appeares with 1% chance. Congrats!"
+                ];
+                let length = facts.length - 1;
+                document.getElementById("RNGesus").onload = NewFact(0);
+
+                function NewFact(multiplier) {
+                    let temp = Math.random() * (length + multiplier);
+                    temp = Math.floor(temp);
+                    //Prevent Repeated fact
+                    if (document.getElementById("RNGesus").innerHTML != facts[temp]) {
+                        document.getElementById("RNGesus").innerHTML = facts[temp];
+                    } else {
+                        NewFact(0.091);
+                    }
+                }
+            </script>
+
+            <section id="content">
+            </section>
+
+            {% include 'footer.html' %}
+        </div>
     </div>
-  </div>
 </body>
+
