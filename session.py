@@ -18,19 +18,32 @@ def session_start(apInfo, passphrase):
         expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
         process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', 'sample.cap', expression], stdin=PIPE, stdout=PIPE)
 
-        # Stores the information into database
-        newSession_obj = Session(mac=ap_mac, essid=apInfo['ESSID'], channel=apInfo['channel'], cipher=apInfo['Cipher'], authentication=apInfo['Authentication'], passphrase=passphrase, processid=process.pid, is_active=True, date_created=datetime.now())
+        # Stores the information into Session table
+        newSession_obj = Session(mac=ap_mac, essid=apInfo['ESSID'], channel=apInfo['channel'], privacy=apInfo['Privacy'], cipher=apInfo['Cipher'], authentication=apInfo['Authentication'], passphrase=passphrase, processid=process.pid, is_active=True, date_created=datetime.now())
         db_session.add(newSession_obj)
         db_session.commit()
 
         db_session.refresh(newSession_obj)
+
+        # Gets vendor information for AP
+        vendor = ''
+        try:
+            vendor = MacLookup().lookup(ap_mac)
+        except:
+            vendor = 'Unknown'
+
+        # Adds AP information to SessionClient table
+        newSessionClient_obj = SessionClient(session_id = newSession_obj.id, mac = ap_mac, vendor = vendor, is_ap = True)
+        db_session.add(newSessionClient_obj)
+        db_session.commit()
     except Exception as e:
         print(e)
         db_session.close()
         return -1
     else:
+        session_id = newSession_obj.id
         db_session.close()
-        return newSession_obj.id
+        return session_id
 
 def session_stop(session_id):
     try:
@@ -41,6 +54,9 @@ def session_stop(session_id):
 
         # Terminate tcpdump with the processid from session table
         os.kill(session_obj.processid, signal.SIGINT)
+
+        # Decrypt the encrypted WPA/WPA2 packets
+        Popen(['airdecap-ng', '-e', session_obj.essid, '-p', session_obj.passphrase, 'sample.cap'], stdin=PIPE, stdout=PIPE)
     except Exception as e:
         print(e)
         db_session.close()
@@ -48,6 +64,26 @@ def session_stop(session_id):
     else:
         db_session.close()
         return True
+
+def get_session_list():
+    # Get all rows of Session table
+    session_objs = db_session.query(Session).all()
+
+    # Create an empty session_list, count the number of clients
+    session_list = []
+    for session_obj in session_objs:
+        session = session_obj.__dict__
+        del session['_sa_instance_state']
+
+        # Count number of clients
+        no_of_clients = db_session.query(SessionClient).filter(SessionClient.session_id == session['id']).count()
+        session['no_of_clients'] = no_of_clients
+
+        session_list.append(session)
+
+    db_session.close()
+
+    return { 'data': session_list }
 
 def get_ap_list():
     if os.path.exists('ap-01.csv'):
@@ -67,10 +103,24 @@ def get_ap_list():
     return { 'data': ap_list }
 
 def get_client_list(session_id):
-    session_obj = db_session.query(Session).filter(Session.id == session_id).one()
-    ap_mac = session_obj.mac
     if os.path.exists('ap_mac-01.csv'):
         os.remove('ap_mac-01.csv')
+
+    # Gets the session object based on ID
+    session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+    ap_mac = session_obj.mac
+
+    # Gets the list of clients that are already in SessionClient table
+    clients_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id).all()
+    client_list = []
+    for client_obj in clients_obj:
+        client = client_obj.__dict__
+        client['is_success'] = True
+        client['# packets'] = '-'
+        del client['_sa_instance_state']
+
+        client_list.append(client)
+
     # Retrieves list of clients communicating with AP using airodump and output into csv
     process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
     sleep(10) # Time (in seconds) to stop the AP capture
@@ -78,17 +128,41 @@ def get_client_list(session_id):
     process.kill()
     process.wait()
 
-    # Convert csv to json
-    client_list = csv_to_json('ap_mac-01.csv', 1)
-    for client in client_list:
-        vendor = ''
-        try:
-            vendor = MacLookup().lookup(client['Station MAC'])
-        except:
-            vendor = 'Unknown'
+    # Convert csv to json and check if the client already existed in table. Else, add into client_list
+    scan_client_list = csv_to_json('ap_mac-01.csv', 1)
+    for scan_client in scan_client_list:
+        # Check if scan_client existed in client_list using MAC
+        is_existed = False
+        for client in client_list:
+            if client['mac'] == scan_client['Station MAC']:
+                is_existed = True
+                break
         
-        client['vendor'] = vendor
-        client['BSSID'] = client['BSSID'][:-1]
+        if not is_existed:
+            # Get vendor
+            vendor = ''
+            try:
+                vendor = MacLookup().lookup(scan_client['Station MAC'])
+            except:
+                vendor = 'Unknown'
+
+            scan_client['vendor'] = vendor
+            scan_client['mac'] = scan_client['Station MAC']
+            # scan_client['BSSID'] = scan_client['BSSID'][:-1]
+            scan_client['is_success'] = False
+            client_list.append(scan_client)
+
+    # Convert csv to json
+    # client_list = csv_to_json('ap_mac-01.csv', 1)
+    # for client in client_list:
+    #     vendor = ''
+    #     try:
+    #         vendor = MacLookup().lookup(client['Station MAC'])
+    #     except:
+    #         vendor = 'Unknown'
+        
+    #     client['vendor'] = vendor
+    #     client['BSSID'] = client['BSSID'][:-1]
 
 
     db_session.close()

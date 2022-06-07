@@ -8,6 +8,7 @@ class Session(Base):
     mac = Column(String)
     essid = Column(String)
     channel = Column(Integer)
+    privacy = Column(String)
     cipher = Column(String)
     authentication = Column(String)
     passphrase = Column(String)

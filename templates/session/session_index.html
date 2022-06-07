@@ -30,18 +30,16 @@
                     <thead>
                       <tr>
                         <th>ID</th>
-                        <th>Date Created</th>
+                        <th>SSID</th>
+                        <th>MAC</th>
+                        <th>Privacy</th>
                         <th>No. of clients</th>
-                        <th>Action</th>
+                        <th>Date Created</th>
+                        <th>Date Ended</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td>1</td>
-                        <td>29/05/2022 12:00:00 PM</td>
-                        <td>2</td>
-                        <td></td>
-                      </tr>
                     </tbody>
                 </table>
               </div>
@@ -62,20 +60,90 @@
 
   $(document).ready(function() {
       table = $('#table_id').DataTable({
-        // ajax: '/session/get_ap',
+        ajax: '/session/get_session',
         columns: [
-          { data: "ID" },
-          { data: "Date Created" },
-          { data: "No. of clients" },
+          { data: "id" },
+          { data: "essid" },
+          { data: "mac" },
+          { data: "privacy" },
+          { data: "no_of_clients" },
+          { data: "date_created" },
+          { data: "date_ended" },
           { data: null,
             render: function(data, type, row) {
-              return '<button type="button" class="btn btn-info btn-circle mr-1"><i class="fas fa-info"></i></button>'+
-                '<button type="button" class="btn btn-success btn-circle mr-1"><i class="fas fa-check"></i></button>'+
-                '<button type="button" class="btn btn-danger btn-circle mr-1"><i class="fas fa-trash"></i></button>'
+              var html = $('<div><button type="button" class="btn btn-info btn-circle mr-1 editButton"><i class="fas fa-pencil-alt"></i></button>'+
+                '<button type="button" class="btn btn-success btn-circle mr-1 stopButton"><i class="fas fa-check"></i></button>'+
+                '<button type="button" class="btn btn-danger btn-circle mr-1 deleteButton"><i class="fas fa-trash"></i></button></div>');
+
+              // Add url path to edit button
+              var url_path = '"session/modify/'+data.id+'"';
+              html.find('.editButton').attr('onclick', 'window.location.href='+url_path);
+
+              // Disable delete button if is_active is True
+              if(data.is_active) {
+                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled')
+              } else {
+                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled')
+                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled')
+              }
+
+              return html.html();
             },
             sorting: false
           }
         ]
       });
+  });
+
+  $('#table_id tbody').on('click', '.stopButton', function() {
+    var data = table.row($(this).parents('tr')).data();
+    $.confirm({
+      animateFromElement: false,
+      animation: 'opacity',
+      title: 'End Session',
+      content: 'Are you sure you want to end the session? This cannot be undone.',
+      buttons: {
+        confirm: function() {
+          $.ajax({
+            url: "session/stop",
+            method: "POST",
+            headers: { session_id: data.id },
+            success: function(result) {
+              if (result.output) {
+                toastr.success(result.message)
+              } else {
+                toastr.error(result.message)
+              }
+            }
+          })
+        }
+      }
+    });
+  });
+
+  $('#table_id tbody').on('click', '.deleteButton', function() {
+    var data = table.row($(this).parents('tr')).data();
+    $.confirm({
+      animateFromElement: false,
+      animation: 'opacity',
+      title: 'Delete Session',
+      content: 'Are you sure you want to delete the session? This cannot be undone.',
+      buttons: {
+        confirm: function() {
+          $.ajax({
+            url: "",
+            method: "POST",
+            headers: { session_id: data.id },
+            success: function(result) {
+              if (result.output) {
+                toastr.success(result.message)
+              } else {
+                toastr.error(result.message)
+              }
+            }
+          })
+        }
+      }
+    });
   });
 </script>
