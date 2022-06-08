@@ -1,28 +1,14 @@
 <!DOCTYPE html>
 {% include 'header.html' %}
 
-<style>
-    .center {
-        margin: auto;
-        width: 60%;
-        border: 2px solid #924CF3;
-        padding: 10px;
-    }
-
-    .funfactbutton {
-        border: 2px solid #32989C;
-        color: darkorange;
-        float: right
-    }
-</style>
 <body>
     <div id="wrapper">
         {% include 'sidebar.html' %}
         <div id="content-wrapper" class="d-flex flex-column">
-            <div class="center" id="funfactbox">
+            <div class="m-auto p-2 w-50" style="border: 2px solid #924CF3;" id="funfactbox">
                 <p style="margin-bottom: 6px;">
                     <b> Did you know?</b>
-                    <button class="funfactbutton" onclick="NewFact(0.091)">Click for a random fun fact!</button> <br>
+                    <button class="funfactbutton float-right text-primary" style="border: 2px solid #32989C;" onclick="NewFact(0.091)">Click for a random fun fact!</button> <br>
                 </p>
                 <p id="RNGesus">
                     How are you seeing this?
