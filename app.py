@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
-from session import session_start, get_ap_list, get_client_list, force_eapol_handshake
+from session import get_session_list, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
 import messages
 
 from models import *
@@ -30,11 +30,21 @@ def session_create():
         # Calls session start
         session_id = session_start(apInfo, passphrase)
 
-        if(session_id != 1):
+        if(session_id != -1):
             # Stores information to database and redirect to modify page
             flash(messages.session_create_success, 'success')
             return redirect(url_for('session_modify', session_id = session_id))
 
+@app.route('/session/stop', methods=['POST'])
+def session_end():
+    # Received headers: session_id
+    session_id = request.headers.get('session_id')
+    output = session_stop(session_id)
+    if output == True:
+        return jsonify({'output': True, 'message': messages.session_stop_success})
+    else:
+        return jsonify({'output': False, 'message': messages.session_stop_failed})
+    
 @app.route('/session/modify/<session_id>', methods=['GET', 'POST'])
 def session_modify(session_id):
     if request.method == 'GET':
@@ -45,6 +55,10 @@ def session_modify(session_id):
             return jsonify({'output': True, 'message': messages.handshake_success})
         else:
             return jsonify({'output': False, 'message': messages.handshake_failed})
+
+@app.route('/session/get_session')
+def session_get_session():
+    return jsonify(get_session_list())
 
 @app.route('/session/get_ap')
 def session_get_ap():

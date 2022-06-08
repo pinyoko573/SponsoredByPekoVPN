@@ -68,15 +68,15 @@
           },
           autoWidth: false,
           columns: [
-            { data: "Station MAC" },
+            { data: "mac" },
             { data: "vendor" },
             { data: "# packets" },
             { data: null,
               render: function(data, type, row) {
-                if (true)
+                if (!data.is_success)
                   return '<button type="button" class="btn btn-primary">Force Handshake</button>'
                 else
-                  return '<button type="button" class="btn btn-success">Success/button>'
+                  return '<button type="button" class="btn btn-success" disabled>Success</button>'
               },
               sorting: false
             }
