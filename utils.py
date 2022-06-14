@@ -1,5 +1,11 @@
 import pandas
 import json
+import re
+
+rfc1918 = re.compile('(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)')
+
+def is_privateip(ip):
+    return rfc1918.match(ip)
 
 def csv_to_json(csvFilePath, table_no):
     # get the first gap

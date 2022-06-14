@@ -3,16 +3,28 @@ from scapy.layers.http import HTTPRequest
 from scapy.layers.inet import *
 import cryptography
 
-from models import ClientARP, SessionClient, Website, Protocol, WebsiteClient
+from utils import is_privateip
+
+from models import ClientARP, ExternalIP, ExternalIPClient, SessionClient, Website, Protocol, WebsiteClient
 from database import db_session
 
 load_layer('tls')
 
 # variable to store list of hostnames and clients who visited website to prevent duplicates
-website_data = {}
+clients_list = {}
+website_list = {}
 protocol_list = {}
+externalip_list = {}
 
 def decap(session_id):
+    # Retrieve all the clients, store the MAC address and sessionclient_id on a dictionary
+    try:
+        sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id)
+        for sessionClient_obj in sessionClient_objs:
+            clients_list[sessionClient_obj.mac] = sessionClient_obj.id
+    except:
+        pass
+
     # Loops every frame and extract out information
     packet_counter = 0
     for packet in PcapReader('sample-dec.cap'):
@@ -31,7 +43,11 @@ def decap(session_id):
                 arp_dump(session_id, packet)
             # If protocol=HTTP 1 or TLS, store website info on Website table
             elif protocol_type == 'HTTP 1' or protocol_type == 'TLS':
-                website_dump(session_id, packet)
+                website_dump(packet)
+
+            # Checks if its a public (or private) IP, then store in the externalip_list variable
+            if not is_privateip(packet[ip].src):
+                externalip_dump(packet)
         except:
             pass
 
@@ -77,17 +93,15 @@ def arp_dump(session_id, packet):
     if layer.op == 2:
         # Get id of sessionclient based on MAC and session_id
         mac = layer.hwsrc
-        ip = layer.psrc
-        sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id, SessionClient.mac == mac).one()
-        
+        ip = layer.psrc        
         # If id of sessionclient and ip is already in table, do not insert
-        clientarp_count = db_session.query(ClientARP).filter(ClientARP.sessionclient_id == sessionClient_obj.id, ClientARP.ip == ip).count()
+        clientarp_count = db_session.query(ClientARP).filter(ClientARP.sessionclient_id == clients_list[mac], ClientARP.ip == ip).count()
         if not clientarp_count == 1:
-            newClientArp_obj = ClientARP(sessionclient_id = sessionClient_obj.id, ip = ip)
+            newClientArp_obj = ClientARP(sessionclient_id = clients_list[mac], ip = ip)
             db_session.add(newClientArp_obj)
             db_session.commit()
 
-def website_dump(session_id, packet):
+def website_dump(packet):
     is_https = False
     hostname = None
     # If the packet doesnt have httprequest or TLSclienthello layer, skip
@@ -103,22 +117,21 @@ def website_dump(session_id, packet):
 
     # Get the client id from mac address
     client_mac = packet[Ether].src
-    sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id, SessionClient.mac == client_mac).one()
     
     # Check if the website and client id is included in website_list
-    if hostname not in website_data:
-        website_data[hostname] = { 'is_https': is_https, 'clients' : [] }
+    if hostname not in website_list:
+        website_list[hostname] = { 'is_https': is_https, 'clients' : [] }
     
-    if website_data[hostname]['clients'].count(sessionClient_obj.id) == 0:
-        website_data[hostname]['clients'].append(sessionClient_obj.id)
+    if website_list[hostname]['clients'].count(clients_list[client_mac]) == 0:
+        website_list[hostname]['clients'].append(clients_list[client_mac])
 
 def website_save(session_id):
-    for website in website_data.keys():
-        newWebsite_obj = Website(session_id = session_id, hostname = website, is_https = website_data[website]['is_https'])
+    for website in website_list.keys():
+        newWebsite_obj = Website(session_id = session_id, hostname = website, is_https = website_list[website]['is_https'])
         db_session.add(newWebsite_obj)
         db_session.flush()
 
-        for client in website_data[website]['clients']:
+        for client in website_list[website]['clients']:
             newWebsiteClient_obj = WebsiteClient(website_id = newWebsite_obj.id, sessionclient_id = client)
             db_session.add(newWebsiteClient_obj)
     
@@ -128,6 +141,29 @@ def protocol_dump(session_id):
     for protocol in protocol_list.keys():
         newProtocol_obj = Protocol(session_id = session_id, type = protocol, count = protocol_list[protocol])
         db_session.add(newProtocol_obj)
+    db_session.commit()
+
+def externalip_dump(packet):
+    external_ip = packet[ip].src
+    receiver_sessionclient_id = clients_list[packet[Ether].dst]
+
+    if external_ip not in externalip_list:
+        externalip_list[external_ip] = {}
+    if receiver_sessionclient_id not in externalip_list[external_ip]:
+        externalip_list[external_ip][receiver_sessionclient_id] = 1
+    else:
+        externalip_list[external_ip][receiver_sessionclient_id] += 1
+
+def externalip_save(session_id):
+    for externalip in externalip_list.keys():
+        newExternalIP_obj = ExternalIP(session_id = session_id, external_ip = externalip)
+        db_session.add(newExternalIP_obj)
+        db_session.flush()
+
+        for client in externalip_list[externalip].keys():
+            newExternalIPClient_obj = ExternalIPClient(sessionclient_id = client, externalip_id = newExternalIP_obj.id, count = externalip_list[externalip][client])
+            db_session.add(newExternalIPClient_obj)
+
     db_session.commit()
 
 decap(1)

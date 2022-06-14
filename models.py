@@ -20,6 +20,7 @@ class Session(Base):
     sessionclient = relationship('SessionClient', back_populates = 'session')
     website = relationship('Website', back_populates = 'session')
     protocol = relationship('Protocol', back_populates = 'session')
+    externalip = relationship('ExternalIP', back_populates = 'session')
 
 class SessionClient(Base):
     __tablename__ = 'sessionclient'
@@ -34,7 +35,7 @@ class SessionClient(Base):
     session = relationship('Session', back_populates = 'sessionclient')
     clientarp = relationship('ClientARP', back_populates = 'sessionclient')
     websiteclient = relationship('WebsiteClient', back_populates = 'sessionclient')
-    externalip = relationship('ExternalIP', back_populates = 'sessionclient')
+    externalipclient = relationship('ExternalIPClient', back_populates = 'sessionclient')
 
 class ClientARP(Base):
     __tablename__ = 'clientarp'
@@ -56,7 +57,7 @@ class Website(Base):
 
 class WebsiteClient(Base):
     __tablename__ = 'websiteclient'
-    id = Column(Integer, primary_key = True)
+    id = Column(Integer, primary_key=True)
     website_id = Column(Integer, ForeignKey('website.id'))
     sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
 
@@ -75,11 +76,21 @@ class Protocol(Base):
 class ExternalIP(Base):
     __tablename__ = 'externalip'
     id = Column(Integer, primary_key=True)
-    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
+    session_id = Column(Integer, ForeignKey('session.id'))
     external_ip = Column(String)
+
+    session = relationship('Session', back_populates = 'externalip')
+    externalipclient = relationship('ExternalIPClient', back_populates = 'externalip')
+
+class ExternalIPClient(Base):
+    __tablename__ = 'externalipclient'
+    id = Column(Integer, primary_key=True)
+    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
+    externalip_id = Column(Integer, ForeignKey('externalip.id'))
     count = Column(Integer)
 
-    sessionclient = relationship('SessionClient', back_populates = 'externalip')
+    externalip = relationship('ExternalIP', back_populates = 'externalipclient')
+    sessionclient = relationship('SessionClient', back_populates = 'externalipclient')
 
 # class DNS(Base):
 #     __tablename__ = 'dns'
