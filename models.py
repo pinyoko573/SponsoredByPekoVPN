@@ -18,37 +18,76 @@ class Session(Base):
     date_ended = Column(DateTime)
 
     sessionclient = relationship('SessionClient', back_populates = 'session')
-    packet = relationship('Packet', back_populates = 'session')
+    website = relationship('Website', back_populates = 'session')
+    protocol = relationship('Protocol', back_populates = 'session')
 
 class SessionClient(Base):
     __tablename__ = 'sessionclient'
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey('session.id'))
     mac = Column(String)
-    ip = Column(String)
     vendor = Column(String)
     is_ap = Column(Boolean)
+    packets_sent = Column(Integer)
+    packets_rec = Column(Integer)
 
     session = relationship('Session', back_populates = 'sessionclient')
+    clientarp = relationship('ClientARP', back_populates = 'sessionclient')
+    websiteclient = relationship('WebsiteClient', back_populates = 'sessionclient')
+    externalip = relationship('ExternalIP', back_populates = 'sessionclient')
 
-class Packet(Base):
-    __tablename__ = 'packet'
+class ClientARP(Base):
+    __tablename__ = 'clientarp'
     id = Column(Integer, primary_key=True)
-    session_id = Column(Integer, ForeignKey('session.id'))
-    source_ip = Column(String)
-    destination_ip = Column(String)
-    protocol = Column(String)
-    length = Column(Integer)
+    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
+    ip = Column(String)
 
-    session = relationship('Session', back_populates = 'packet')
-    website = relationship('Website', back_populates = 'packet', uselist = False)
+    sessionclient = relationship('SessionClient', back_populates = 'clientarp')
 
 class Website(Base):
     __tablename__ = 'website'
     id = Column(Integer, primary_key=True)
-    packet_id = Column(Integer, ForeignKey('packet.id'))
+    session_id = Column(Integer, ForeignKey('session.id'))
     hostname = Column(String)
     is_https = Column(Integer)
 
-    packet = relationship('Packet', back_populates = 'website')
+    session = relationship('Session', back_populates = 'website')
+    websiteclient = relationship('WebsiteClient', back_populates = 'website')
 
+class WebsiteClient(Base):
+    __tablename__ = 'websiteclient'
+    id = Column(Integer, primary_key = True)
+    website_id = Column(Integer, ForeignKey('website.id'))
+    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
+
+    website = relationship('Website', back_populates = 'websiteclient')
+    sessionclient = relationship('SessionClient', back_populates = 'websiteclient')
+
+class Protocol(Base):
+    __tablename__ = 'protocol'
+    id = Column(Integer, primary_key=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    type = Column(String)
+    count = Column(Integer)
+
+    session = relationship('Session', back_populates = 'protocol')
+
+class ExternalIP(Base):
+    __tablename__ = 'externalip'
+    id = Column(Integer, primary_key=True)
+    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
+    external_ip = Column(String)
+    count = Column(Integer)
+
+    sessionclient = relationship('SessionClient', back_populates = 'externalip')
+
+# class DNS(Base):
+#     __tablename__ = 'dns'
+#     id = Column(Integer, primary_key=True)
+#     transaction_id = Column(String)
+#     hostname = Column(String)
+#     req_packet_id = Column(Integer, ForeignKey('packet.id'))
+#     res_packet_id = Column(Integer, ForeignKey('packet.id'))
+#     is_flagged = Column(Boolean)
+
+#     packet = relationship('Packet', back_populates='dns')
