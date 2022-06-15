@@ -1,5 +1,6 @@
 from time import sleep
 from utils import csv_to_json
+from packet import decap
 from subprocess import Popen, PIPE
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
@@ -12,18 +13,21 @@ from database import db_session
 
 def session_start(apInfo, passphrase):
     try:
-        # Starts capturing all the wifi packets that has communicated with AP using tcpdump
+        # Retrieves basic information from json and creates a newSession_obj to Session table to get id
         apInfo = json.loads(apInfo)
         ap_mac = apInfo['BSSID']
-        expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
-        process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', 'sample.cap', expression], stdin=PIPE, stdout=PIPE)
+        newSession_obj = Session(mac=ap_mac, essid=apInfo['ESSID'], channel=apInfo['channel'], privacy=apInfo['Privacy'], cipher=apInfo['Cipher'], authentication=apInfo['Authentication'], passphrase=passphrase, is_active=True, date_created=datetime.now())
 
-        # Stores the information into Session table
-        newSession_obj = Session(mac=ap_mac, essid=apInfo['ESSID'], channel=apInfo['channel'], privacy=apInfo['Privacy'], cipher=apInfo['Cipher'], authentication=apInfo['Authentication'], passphrase=passphrase, processid=process.pid, is_active=True, date_created=datetime.now())
         db_session.add(newSession_obj)
-        db_session.commit()
+        db_session.flush()
 
-        db_session.refresh(newSession_obj)
+        # Starts capturing all the wifi packets that has communicated with AP using tcpdump
+        expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
+        filename = 'session-{}.cap'.format(newSession_obj.id)
+        process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', filename, expression], stdin=PIPE, stdout=PIPE)
+
+        # Updates the process id in newSession_obj
+        newSession_obj.processid = process.pid
 
         # Gets vendor information for AP
         vendor = ''
@@ -56,7 +60,13 @@ def session_stop(session_id):
         os.kill(session_obj.processid, signal.SIGINT)
 
         # Decrypt the encrypted WPA/WPA2 packets
-        Popen(['airdecap-ng', '-e', session_obj.essid, '-p', session_obj.passphrase, 'sample.cap'], stdin=PIPE, stdout=PIPE)
+        filename = 'session-{}.cap'.format(session_obj.id)
+        process = Popen(['airdecap-ng', '-e', session_obj.essid, '-p', session_obj.passphrase, filename], stdin=PIPE, stdout=PIPE)
+        process.wait()
+
+        # Unpacket the packet file and store information to database
+        decap(session_id)
+        
     except Exception as e:
         print(e)
         db_session.close()

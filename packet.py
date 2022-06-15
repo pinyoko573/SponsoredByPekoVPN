@@ -21,13 +21,16 @@ def decap(session_id):
     try:
         sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id)
         for sessionClient_obj in sessionClient_objs:
-            clients_list[sessionClient_obj.mac] = sessionClient_obj.id
-    except:
+            # Decapitalize mac address as scapy reads it in lower case
+            clients_list[sessionClient_obj.mac.lower()] = sessionClient_obj.id
+    except Exception as e:
+        print(e)
         pass
 
     # Loops every frame and extract out information
     packet_counter = 0
-    for packet in PcapReader('sample-dec.cap'):
+    filename = 'session-{}-dec.cap'.format(session_id)
+    for packet in PcapReader(filename):
         try:
             # Gets the type of protocol through the packet's layers
             protocol_type = get_protocol(get_packet_layers(packet))
@@ -46,7 +49,7 @@ def decap(session_id):
                 website_dump(packet)
 
             # Checks if its a public (or private) IP, then store in the externalip_list variable
-            if not is_privateip(packet[ip].src):
+            if not is_privateip(packet[IP].src):
                 externalip_dump(packet)
         except:
             pass
@@ -56,6 +59,7 @@ def decap(session_id):
     # Store protocol in protocol table, website in website and websiteclients table
     protocol_dump(session_id)
     website_save(session_id)
+    externalip_save(session_id)
 
     db_session.close()
 
@@ -144,7 +148,7 @@ def protocol_dump(session_id):
     db_session.commit()
 
 def externalip_dump(packet):
-    external_ip = packet[ip].src
+    external_ip = packet[IP].src
     receiver_sessionclient_id = clients_list[packet[Ether].dst]
 
     if external_ip not in externalip_list:
