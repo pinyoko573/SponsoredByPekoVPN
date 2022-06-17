@@ -169,5 +169,3 @@ def externalip_save(session_id):
             db_session.add(newExternalIPClient_obj)
 
     db_session.commit()
-
-decap(1)

@@ -69,6 +69,11 @@ def session_get_client():
     session_id = request.args.get('session_id')
     return jsonify(get_client_list(session_id))
 
+@app.route('/packet/summary', defaults={'session_id': None})
+@app.route('/packet/summary/<session_id>')
+def packet_summary(session_id):
+    return render_template('packet/summary.html', session_id=session_id)
+
 if __name__ == '__main__':
     app.secret_key = '12345'
     app.run(port=5000, debug='true')
