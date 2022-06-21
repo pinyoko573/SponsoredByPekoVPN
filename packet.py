@@ -58,7 +58,7 @@ def decap(session_id):
                 website_dump(packet)
 
             # If time of packet is passed by a minute, append new array
-            if (packet.time < next_timestamp):
+            if not (packet.time < next_timestamp):
                 next_timestamp += 60 # next_timestamp + 1 minute
                 packets_sent_time_list.append(0)
                 packets_rec_time_list.append(0)
@@ -69,20 +69,18 @@ def decap(session_id):
             if is_privateip(packet[IP].src):
                 packets_sent_time_list[min_count] += 1
 
-                src_id = clients_list[packet[Ether].src]
-                if src_id in packets_sent_client_list:
-                    packets_sent_client_list[src_id] += 1
+                if packet[Ether].src in packets_sent_client_list:
+                    packets_sent_client_list[packet[Ether].src] += 1
                 else:
-                    packets_sent_client_list[src_id] = 1
+                    packets_sent_client_list[packet[Ether].src] = 1
             # In the IP layer, if dst is private IP -> client receives the packet
             if is_privateip(packet[IP].dst):
                 packets_rec_time_list[min_count] += 1
 
-                rec_id = clients_list[packet[Ether].dst]
-                if src_id in packets_rec_client_list:
-                    packets_rec_client_list[rec_id] += 1
+                if packet[Ether].dst in packets_rec_client_list:
+                    packets_rec_client_list[packet[Ether].dst] += 1
                 else:
-                    packets_rec_client_list[rec_id] = 1
+                    packets_rec_client_list[packet[Ether].dst] = 1
         except:
             pass
 
@@ -92,7 +90,7 @@ def decap(session_id):
     protocol_dump(session_id)
     website_insert(session_id)
     sent_rec_packets_insert()
-    timestamp_insert()
+    timestamp_insert(session_id, start_timestamp, min_count)
 
     db_session.close()
 
@@ -181,8 +179,8 @@ def protocol_dump(session_id):
     db_session.commit()
 
 def sent_rec_packets_insert():
-    for client in clients_list.keys():
-        sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.id == client).one()
+    for client in clients_list:
+        sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.id == clients_list[client]).one()
         sessionClient_obj.packets_sent = packets_sent_client_list[client]
         sessionClient_obj.packets_rec = packets_rec_client_list[client]
     db_session.commit()
@@ -191,10 +189,10 @@ def timestamp_insert(session_id, start_timestamp, min_count):
     timestamp = start_timestamp
     for min in range(min_count + 1):
         # sent
-        newPacketTimeSent_obj = PacketTime(session_id = session_id, type = 0, timestamp = timestamp, count = packets_sent_time_list[min])
+        newPacketTimeSent_obj = PacketTime(session_id = session_id, type = 0, timestamp = int(timestamp), count = packets_sent_time_list[min])
         db_session.add(newPacketTimeSent_obj)
         # received
-        newPacketTimeRec_obj = PacketTime(session_id = session_id, type = 1, timestamp = timestamp, count = packets_rec_time_list[min])
+        newPacketTimeRec_obj = PacketTime(session_id = session_id, type = 1, timestamp = int(timestamp), count = packets_rec_time_list[min])
         db_session.add(newPacketTimeRec_obj)
 
         timestamp += 60 # 1 minute
