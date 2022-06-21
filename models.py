@@ -20,7 +20,7 @@ class Session(Base):
     sessionclient = relationship('SessionClient', back_populates = 'session')
     website = relationship('Website', back_populates = 'session')
     protocol = relationship('Protocol', back_populates = 'session')
-    externalip = relationship('ExternalIP', back_populates = 'session')
+    packettime = relationship('PacketTime', back_populates = 'session')
 
 class SessionClient(Base):
     __tablename__ = 'sessionclient'
@@ -35,7 +35,6 @@ class SessionClient(Base):
     session = relationship('Session', back_populates = 'sessionclient')
     clientarp = relationship('ClientARP', back_populates = 'sessionclient')
     websiteclient = relationship('WebsiteClient', back_populates = 'sessionclient')
-    externalipclient = relationship('ExternalIPClient', back_populates = 'sessionclient')
 
 class ClientARP(Base):
     __tablename__ = 'clientarp'
@@ -73,24 +72,15 @@ class Protocol(Base):
 
     session = relationship('Session', back_populates = 'protocol')
 
-class ExternalIP(Base):
-    __tablename__ = 'externalip'
+class PacketTime(Base):
+    __tablename__ = 'packettime'
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey('session.id'))
-    external_ip = Column(String)
-
-    session = relationship('Session', back_populates = 'externalip')
-    externalipclient = relationship('ExternalIPClient', back_populates = 'externalip')
-
-class ExternalIPClient(Base):
-    __tablename__ = 'externalipclient'
-    id = Column(Integer, primary_key=True)
-    sessionclient_id = Column(Integer, ForeignKey('sessionclient.id'))
-    externalip_id = Column(Integer, ForeignKey('externalip.id'))
+    type = Column(Integer)
+    timestamp = Column(Integer)
     count = Column(Integer)
 
-    externalip = relationship('ExternalIP', back_populates = 'externalipclient')
-    sessionclient = relationship('SessionClient', back_populates = 'externalipclient')
+    session = relationship('Session', back_populates = 'packettime')
 
 # class DNS(Base):
 #     __tablename__ = 'dns'

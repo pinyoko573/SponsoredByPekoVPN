@@ -5,7 +5,7 @@ import cryptography
 
 from utils import is_privateip
 
-from models import ClientARP, ExternalIP, ExternalIPClient, SessionClient, Website, Protocol, WebsiteClient
+from models import ClientARP, SessionClient, Website, Protocol, WebsiteClient, PacketTime
 from database import db_session
 
 load_layer('tls')
@@ -14,7 +14,10 @@ load_layer('tls')
 clients_list = {}
 website_list = {}
 protocol_list = {}
-externalip_list = {}
+packets_sent_client_list = {}
+packets_rec_client_list = {}
+packets_sent_time_list = [0]
+packets_rec_time_list = [0]
 
 def decap(session_id):
     # Retrieve all the clients, store the MAC address and sessionclient_id on a dictionary
@@ -30,6 +33,12 @@ def decap(session_id):
     # Loops every frame and extract out information
     packet_counter = 0
     filename = 'session-{}-dec.cap'.format(session_id)
+
+    # Get the starting timestamp of the packet. Number of packets is counted every minute
+    start_timestamp = PcapReader(filename).read_packet(0).time
+    next_timestamp = start_timestamp + 60
+    min_count = 0
+
     for packet in PcapReader(filename):
         try:
             # Gets the type of protocol through the packet's layers
@@ -48,9 +57,32 @@ def decap(session_id):
             elif protocol_type == 'HTTP 1' or protocol_type == 'TLS':
                 website_dump(packet)
 
-            # Checks if its a public (or private) IP, then store in the externalip_list variable
-            if not is_privateip(packet[IP].src):
-                externalip_dump(packet)
+            # If time of packet is passed by a minute, append new array
+            if (packet.time < next_timestamp):
+                next_timestamp += 60 # next_timestamp + 1 minute
+                packets_sent_time_list.append(0)
+                packets_rec_time_list.append(0)
+                min_count += 1
+
+            # Counts the number of packets sent/received by a client
+            # In the IP layer, if source is private IP -> client sends the packet
+            if is_privateip(packet[IP].src):
+                packets_sent_time_list[min_count] += 1
+
+                src_id = clients_list[packet[Ether].src]
+                if src_id in packets_sent_client_list:
+                    packets_sent_client_list[src_id] += 1
+                else:
+                    packets_sent_client_list[src_id] = 1
+            # In the IP layer, if dst is private IP -> client receives the packet
+            if is_privateip(packet[IP].dst):
+                packets_rec_time_list[min_count] += 1
+
+                rec_id = clients_list[packet[Ether].dst]
+                if src_id in packets_rec_client_list:
+                    packets_rec_client_list[rec_id] += 1
+                else:
+                    packets_rec_client_list[rec_id] = 1
         except:
             pass
 
@@ -58,8 +90,9 @@ def decap(session_id):
 
     # Store protocol in protocol table, website in website and websiteclients table
     protocol_dump(session_id)
-    website_save(session_id)
-    externalip_save(session_id)
+    website_insert(session_id)
+    sent_rec_packets_insert()
+    timestamp_insert()
 
     db_session.close()
 
@@ -129,7 +162,7 @@ def website_dump(packet):
     if website_list[hostname]['clients'].count(clients_list[client_mac]) == 0:
         website_list[hostname]['clients'].append(clients_list[client_mac])
 
-def website_save(session_id):
+def website_insert(session_id):
     for website in website_list.keys():
         newWebsite_obj = Website(session_id = session_id, hostname = website, is_https = website_list[website]['is_https'])
         db_session.add(newWebsite_obj)
@@ -147,27 +180,22 @@ def protocol_dump(session_id):
         db_session.add(newProtocol_obj)
     db_session.commit()
 
-def externalip_dump(packet):
-    external_ip = packet[IP].src
-    receiver_sessionclient_id = clients_list[packet[Ether].dst]
-
-    if external_ip not in externalip_list:
-        externalip_list[external_ip] = {}
-    if receiver_sessionclient_id not in externalip_list[external_ip]:
-        externalip_list[external_ip][receiver_sessionclient_id] = 1
-    else:
-        externalip_list[external_ip][receiver_sessionclient_id] += 1
-
-def externalip_save(session_id):
-    for externalip in externalip_list.keys():
-        newExternalIP_obj = ExternalIP(session_id = session_id, external_ip = externalip)
-        db_session.add(newExternalIP_obj)
-        db_session.flush()
-
-        for client in externalip_list[externalip].keys():
-            newExternalIPClient_obj = ExternalIPClient(sessionclient_id = client, externalip_id = newExternalIP_obj.id, count = externalip_list[externalip][client])
-            db_session.add(newExternalIPClient_obj)
-
+def sent_rec_packets_insert():
+    for client in clients_list.keys():
+        sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.id == client).one()
+        sessionClient_obj.packets_sent = packets_sent_client_list[client]
+        sessionClient_obj.packets_rec = packets_rec_client_list[client]
     db_session.commit()
 
-decap(1)
+def timestamp_insert(session_id, start_timestamp, min_count):
+    timestamp = start_timestamp
+    for min in range(min_count + 1):
+        # sent
+        newPacketTimeSent_obj = PacketTime(session_id = session_id, type = 0, timestamp = timestamp, count = packets_sent_time_list[min])
+        db_session.add(newPacketTimeSent_obj)
+        # received
+        newPacketTimeRec_obj = PacketTime(session_id = session_id, type = 1, timestamp = timestamp, count = packets_rec_time_list[min])
+        db_session.add(newPacketTimeRec_obj)
+
+        timestamp += 60 # 1 minute
+    db_session.commit()
