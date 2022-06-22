@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
 from session import get_session_list, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
+from pstatistics import get_protocol_list, get_timestamp_list
 import messages
 
 from models import *
@@ -73,6 +74,16 @@ def session_get_client():
 @app.route('/packet/summary/<session_id>')
 def packet_summary(session_id):
     return render_template('packet/summary.html', session_id=session_id)
+
+@app.route('/statistics/get_protocol')
+def statistics_get_protocol():
+    session_id = request.args.get('session_id')
+    return jsonify(get_protocol_list(session_id))
+
+@app.route('/statistics/get_timestamp')
+def statistics_get_timestamp():
+    session_id = request.args.get('session_id')
+    return jsonify(get_timestamp_list(session_id))
 
 if __name__ == '__main__':
     app.secret_key = '12345'

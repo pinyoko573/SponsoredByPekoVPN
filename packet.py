@@ -189,11 +189,8 @@ def timestamp_insert(session_id, start_timestamp, min_count):
     timestamp = start_timestamp
     for min in range(min_count + 1):
         # sent
-        newPacketTimeSent_obj = PacketTime(session_id = session_id, type = 0, timestamp = int(timestamp), count = packets_sent_time_list[min])
+        newPacketTimeSent_obj = PacketTime(session_id = session_id, timestamp = int(timestamp), count_sent = packets_sent_time_list[min], count_rec = packets_rec_time_list[min])
         db_session.add(newPacketTimeSent_obj)
-        # received
-        newPacketTimeRec_obj = PacketTime(session_id = session_id, type = 1, timestamp = int(timestamp), count = packets_rec_time_list[min])
-        db_session.add(newPacketTimeRec_obj)
 
         timestamp += 60 # 1 minute
     db_session.commit()

@@ -76,9 +76,9 @@ class PacketTime(Base):
     __tablename__ = 'packettime'
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey('session.id'))
-    type = Column(Integer)
     timestamp = Column(Integer)
-    count = Column(Integer)
+    count_sent = Column(Integer)
+    count_rec = Column(Integer)
 
     session = relationship('Session', back_populates = 'packettime')
 

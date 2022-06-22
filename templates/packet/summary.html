@@ -16,64 +16,52 @@
 
                             <div>
                                 Select a Session ID:
-                                <select class="form-select">
-                                    <option selected></option>
+                                <select class="form-select" id="dropdown">
+                                    <option></option>
                                 </select>
                             </div>
 
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Packet Transmission Timeline</h6>
+                    
+                    <div>
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Packet Timestamp</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="curve_chart"></div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <div id="curve_chart"></div>
+                            </div>
+    
+                            <div class="col-md-5">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Protocols</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="piechart"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="row">
+                            <div class="col-lg-12 mt-3">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Client List</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card shadow h-100 mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">External IPs received (Geolocation)</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="regions_div" style="height:200px"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="card shadow h-100 mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Protocols</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="piechart"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-lg-12 mt-3">
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">External IPs received</h6>
-                                </div>
-                                <div class="card-body">
-                                    
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </section>
 
@@ -83,60 +71,98 @@
 </body>
 
 <script>
-    google.charts.load('current', { 'packages': ['corechart', 'geochart'] });
-    google.charts.setOnLoadCallback(drawLineChart);
-    google.charts.setOnLoadCallback(drawPieChart);
-    google.charts.setOnLoadCallback(drawRegionsMap);
+    google.charts.load('current', { 'packages': ['corechart'] });
+    var protocol_list;
+    var timestamp_list;
 
-    function drawLineChart() {
-        var data = google.visualization.arrayToDataTable([
-            ['Year', 'Sales'],
-            ['2004', 1000],
-            ['2005', 1170],
-            ['2006', 660],
-            ['2007', 1030]
-        ]);
+    // url parameter contains session id
+    session_id = JSON.parse('{{ session_id | tojson }}');
 
-        var options = {
-            curveType: 'function',
-            legend: { position: 'none' }
-        };
+    $(document).ready(function() {
+        // Retrieve session id list
+        $.ajax({
+            url: "/session/get_session",
+            async: false,
+            method: "GET",
+            success: function(result) {
+                result.data.forEach(session => {
+                    $("#dropdown").append($("<option />").val(session.id).text(session.id));
 
-        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+                    if (session_id != null) {
+                        $("#dropdown").val(session_id);
+                    }
+                })
+            }
+        })
 
-        chart.draw(data, options);
+      // Retrieve details if session_id is not null
+      if (session_id != null) {
+        get_protocol();
+        get_timestamp();
+      }
+    });
+
+    function get_protocol() {
+        $.ajax({
+            url: "/statistics/get_protocol",
+            method: "GET",
+            async: false,
+            data: { session_id: session_id },
+            success: function(result) {
+                protocol_list = result.data;
+
+                google.charts.setOnLoadCallback(drawPieChart);
+            }
+        })
     }
 
-    function drawRegionsMap() {
-        var data = google.visualization.arrayToDataTable([
-            ['Country', 'Popularity'],
-            ['Germany', 200],
-            ['United States', 300],
-            ['Brazil', 400],
-            ['Canada', 500],
-            ['France', 600],
-            ['RU', 700]
-        ]);
+    function get_timestamp() {
+        $.ajax({
+            url: "/statistics/get_timestamp",
+            method: "GET",
+            async: false,
+            data: { session_id: session_id },
+            success: function(result) {
+                timestamp_list = result.data;
 
-        var options = {};
+                google.charts.setOnLoadCallback(drawLineChart);
+            }
+        })
+    }
 
-        var chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+    function drawLineChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('datetime', 'time')
+        data.addColumn('number', 'sent');
+        data.addColumn('number', 'received');
+        timestamp_list.forEach(packet => {
+            data.addRow([new Date(packet.timestamp * 1000), packet.count_sent, packet.count_rec]);
+        });
 
+        var options = { 
+            curveType: 'function',
+            legend: { position: 'none' },
+            vAxis: { viewWindow: { min: 0 }},
+            hAxis: { format: 'HH:mm' }
+        };
+        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
         chart.draw(data, options);
     }
 
     function drawPieChart() {
-        var data = google.visualization.arrayToDataTable([
-            ['Task', 'Hours per Day'],
-            ['Work', 11],
-            ['Eat', 2],
-            ['Commute', 2],
-            ['Watch TV', 2],
-            ['Sleep', 7]
-        ]);
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'type');
+        data.addColumn('number', 'count');
+        protocol_list.forEach(protocol => {
+            data.addRow([protocol.type, protocol.count]);
+        })
 
+        var options = {
+            width: '100%',
+            height: '100%',
+            chartArea: { width: '100%', height: '100%' }
+        };
         var chart = new google.visualization.PieChart(document.getElementById('piechart'));
-
-        chart.draw(data);
+        chart.draw(data, options);
     }
 </script>
