@@ -24,7 +24,7 @@
                         </div>
                     </div>
                     
-                    <div>
+                    <div id="summary_section" class="">
                         <div class="row">
                             <div class="col-md-7">
                                 <div class="card shadow mb-4">
@@ -56,7 +56,21 @@
                                         <h6 class="m-0 font-weight-bold text-primary">Client List</h6>
                                     </div>
                                     <div class="card-body">
-                                        
+                                        <div class="table-responsive">
+                                            <table id="table_id" class="display">
+                                                <thead>
+                                                  <tr>
+                                                    <th>MAC</th>
+                                                    <th>IP</th>
+                                                    <th>Vendor</th>
+                                                    <th>Packets Sent</th>
+                                                    <th>Packets Received</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                </tbody>
+                                            </table>
+                                          </div>
                                     </div>
                                 </div>
                             </div>
@@ -74,11 +88,12 @@
     google.charts.load('current', { 'packages': ['corechart'] });
     var protocol_list;
     var timestamp_list;
-
-    // url parameter contains session id
-    session_id = JSON.parse('{{ session_id | tojson }}');
+    var table;
 
     $(document).ready(function() {
+        // url parameter contains session id
+        session_id = JSON.parse('{{ session_id | tojson }}');
+
         // Retrieve session id list
         $.ajax({
             url: "/session/get_session",
@@ -95,14 +110,25 @@
             }
         })
 
-      // Retrieve details if session_id is not null
-      if (session_id != null) {
-        get_protocol();
-        get_timestamp();
-      }
+        initialiseTable(session_id);
+        // Retrieve details if session_id is not null
+        if (session_id != null) {
+            get_protocol(session_id);
+            get_timestamp(session_id);
+            $("#summary_section").removeClass("d-none");
+        }
     });
 
-    function get_protocol() {
+    // On change function if dropdown is modified
+    $('#dropdown').on('change', function() {
+        if (this.value != "") {
+            get_protocol(this.value);
+            get_timestamp(this.value);
+            table.ajax.url('/statistics/get_clients?session_id='+this.value).load();
+        }
+    });
+
+    function get_protocol(session_id) {
         $.ajax({
             url: "/statistics/get_protocol",
             method: "GET",
@@ -116,7 +142,7 @@
         })
     }
 
-    function get_timestamp() {
+    function get_timestamp(session_id) {
         $.ajax({
             url: "/statistics/get_timestamp",
             method: "GET",
@@ -128,6 +154,31 @@
                 google.charts.setOnLoadCallback(drawLineChart);
             }
         })
+    }
+
+    function initialiseTable(session_id) {
+        table = $('#table_id').DataTable({
+        ajax: {
+            'type': 'GET',
+            'url': '/statistics/get_clients',
+            'data': {
+              'session_id': session_id
+            }
+        },
+        columns: [
+          { data: "mac" },
+          { data: "ip" },
+          { data: "vendor" },
+          { data: "packets_sent" },
+          { data: "packets_rec" },
+        ],
+        order: [],
+        createdRow: function(row, data, dataIndex) {
+            if(data.is_ap) {
+                $(row).addClass('bg-info text-white');
+            }
+        }
+      });
     }
 
     function drawLineChart() {

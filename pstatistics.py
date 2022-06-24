@@ -1,4 +1,4 @@
-from models import PacketTime, Protocol
+from models import ClientARP, PacketTime, Protocol, SessionClient
 from database import db_session
 
 def get_protocol_list(session_id):
@@ -30,3 +30,21 @@ def get_timestamp_list(session_id):
         return { 'data': timestamp_list }
     else:
         return { 'data': timestamp_list }
+    
+def get_clients(session_id):
+    clients_list = []
+    try:
+        clients_obj = db_session.query(SessionClient, ClientARP.ip).join(ClientARP, ClientARP.sessionclient_id == SessionClient.id).filter(SessionClient.session_id == session_id).group_by(SessionClient.id).order_by(SessionClient.is_ap.desc()).all()
+        for client in clients_obj:
+            ip = client[1]
+            client = client[0].__dict__
+            del client['_sa_instance_state']
+            client['ip'] = ip
+            
+            clients_list.append(client)
+
+        db_session.close()
+    except Exception as e:
+        return { 'data': clients_list }
+    else:
+        return { 'data': clients_list }

@@ -121,7 +121,7 @@ def get_client_list(session_id):
     ap_mac = session_obj.mac
 
     # Gets the list of clients that are already in SessionClient table
-    clients_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id).all()
+    clients_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id, SessionClient.is_ap == False).all()
     client_list = []
     for client_obj in clients_obj:
         client = client_obj.__dict__
