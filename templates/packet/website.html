@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+{% include 'header.html' %}
+
+<body>
+    <div id="wrapper">
+        {% include 'sidebar.html' %}
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <section id="content">
+                <div class="container-fluid mt-3">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h5 class="m-0 font-weight-bold text-primary">Summary</h6>
+                        </div>
+                        <div class="card-body">
+
+                            <div>
+                                Select a Session ID:
+                                <select class="form-select" id="dropdown">
+                                    <option></option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    <div id="website_section" class="d-none">
+                        <div class="row">
+                            <div class="col-lg-12 mt-3">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Website List</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="table_id" class="display" style="width:100%">
+                                                <thead>
+                                                  <tr>
+                                                    <th>Hostname</th>
+                                                    <th>No. of Clients</th>
+                                                    <th>Clients Visited</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                </tbody>
+                                            </table>
+                                          </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {% include 'footer.html' %}
+        </div>
+    </div>
+</body>
+
+<script>
+    var table;
+
+    $(document).ready(function() {
+        // set navigation bar to active
+        $('#nav-statistics').addClass('active');
+        $('#collapseTwo').addClass('show');
+
+        // url parameter contains session id
+        session_id = JSON.parse('{{ session_id | tojson }}');
+
+        // Retrieve session id list
+        $.ajax({
+            url: "/session/get_session",
+            async: false,
+            method: "GET",
+            success: function(result) {
+                result.data.forEach(session => {
+                    $("#dropdown").append($("<option />").val(session.id).text(session.id));
+
+                    if (session_id != null) {
+                        $("#dropdown").val(session_id);
+                    }
+                })
+            }
+        })
+
+        initialiseTable(session_id);
+        // Retrieve details if session_id is not null
+        if (session_id != null) {
+            $("#website_section").removeClass("d-none");
+        }
+    });
+
+    // On change function if dropdown is modified
+    $('#dropdown').on('change', function() {
+        if (this.value != "") {
+            table.ajax.url('/statistics/get_websites?session_id='+this.value).load();
+            $("#website_section").removeClass("d-none");
+        }
+    });
+
+    function initialiseTable(session_id) {
+        table = $('#table_id').DataTable({
+        ajax: {
+            'type': 'GET',
+            'url': '/statistics/get_websites',
+            'data': {
+              'session_id': session_id
+            }
+        },
+        columns: [
+            { data: null,
+              render: function(data, type, row) {
+                if (data.website.is_https) {
+                    var lock_icon = '<div>'+data.website.hostname+' <i class="fas fa-lock text-success" data-toggle="tooltip" title="HTTPS protocol"></i></div>';
+                    return $(lock_icon).html();
+                }
+                return data.website.hostname;
+              }
+            },
+            { data: null,
+              render: function(data, type, row) {
+                return data.clients.length;
+              }
+            },
+            { data: null,
+              render: function(data, type, row) {
+                var html = "";
+                data.clients.forEach(client => {
+                    html = html.concat(client.mac, " (", client.ip, ")<br>");
+                });
+                return html;
+              }
+            }
+        ],
+        order: [],
+        "autoWidth": false,
+        "drawCallback": function(settings) {
+            $('[data-toggle="tooltip"]').tooltip();  
+        }
+      });
+    }
+
+</script>

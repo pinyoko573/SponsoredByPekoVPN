@@ -59,6 +59,9 @@
   var table;
 
   $(document).ready(function() {
+      // set navigation bar to active
+      $('#nav-session').addClass('active');
+
       table = $('#table_id').DataTable({
         ajax: '/session/get_session',
         columns: [

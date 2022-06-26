@@ -24,7 +24,7 @@
                         </div>
                     </div>
                     
-                    <div id="summary_section" class="">
+                    <div id="summary_section" class="d-none">
                         <div class="row">
                             <div class="col-md-7">
                                 <div class="card shadow mb-4">
@@ -91,6 +91,10 @@
     var table;
 
     $(document).ready(function() {
+        // set navigation bar to active
+        $('#nav-statistics').addClass('active');
+        $('#collapseTwo').addClass('show');
+
         // url parameter contains session id
         session_id = JSON.parse('{{ session_id | tojson }}');
 
@@ -125,6 +129,7 @@
             get_protocol(this.value);
             get_timestamp(this.value);
             table.ajax.url('/statistics/get_clients?session_id='+this.value).load();
+            $("#summary_section").removeClass("d-none");
         }
     });
 
@@ -177,7 +182,8 @@
             if(data.is_ap) {
                 $(row).addClass('bg-info text-white');
             }
-        }
+        },
+        "autoWidth": false
       });
     }
 
