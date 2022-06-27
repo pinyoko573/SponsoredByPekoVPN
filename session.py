@@ -75,6 +75,17 @@ def session_stop(session_id):
         db_session.close()
         return True
 
+# def session_delete():
+#     try:
+        
+#     except Exception as e:
+#         print(e)
+#         db_session.close()
+#         return False
+#     else:
+#         db_session.close()
+#         return True
+
 def get_session_list():
     # Get all rows of Session table
     session_objs = db_session.query(Session).all()
@@ -96,21 +107,25 @@ def get_session_list():
     return { 'data': session_list }
 
 def get_ap_list():
-    if os.path.exists('ap-01.csv'):
-        os.remove('ap-01.csv')
-    # Retrieves AP channel using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-    sleep(5)
-    process.terminate()
-    process.kill()
-    process.wait()
+    try:
+        if os.path.exists('ap-01.csv'):
+            os.remove('ap-01.csv')
+        # Retrieves AP channel using airodump and output into csv
+        process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
+        sleep(5)
+        process.terminate()
+        process.kill()
+        process.wait()
 
-    # Convert csv to json
-    ap_list = csv_to_json('ap-01.csv', 0)
-    for i in ap_list:
-        i['ESSID'] = i['ESSID'][:-1]
+        # Convert csv to json
+        ap_list = csv_to_json('ap-01.csv', 0)
+        for i in ap_list:
+            i['ESSID'] = i['ESSID'][:-1]
         
-    return { 'data': ap_list }
+        return { 'data': ap_list }
+    except:
+        return { 'data': None }
+
 
 def get_client_list(session_id):
     if os.path.exists('ap_mac-01.csv'):

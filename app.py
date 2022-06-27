@@ -57,6 +57,10 @@ def session_modify(session_id):
         else:
             return jsonify({'output': False, 'message': messages.handshake_failed})
 
+@app.route('/session/delete', methods=['POST'])
+def session_delete():
+    session_id = request.headers.get('session_id')
+
 @app.route('/session/get_session')
 def session_get_session():
     return jsonify(get_session_list())
