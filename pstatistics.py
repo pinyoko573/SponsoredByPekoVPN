@@ -79,3 +79,24 @@ def get_website_list(session_id):
     else:
         db_session.close()
         return { 'data': website_list }
+
+def get_arp_list(session_id):
+    arp_list = []
+    try:
+        arps_object = db_session.query(ClientARP.ip, SessionClient.mac, SessionClient.is_ap).join(SessionClient, SessionClient.id == ClientARP.sessionclient_id).filter(SessionClient.session_id == session_id).order_by(ClientARP.sessionclient_id.asc()).all()
+
+        for arp_object in arps_object:
+            ip = arp_object[0]
+            mac = arp_object[1]
+            is_ap = arp_object[2]
+            if not arp_list or not arp_list[-1]["mac"] == mac:
+                arp_list.append({"mac": mac, "ip": [ip], "is_ap": is_ap})
+            else:
+                arp_list[-1]["ip"].append(ip)
+
+    except Exception as e:
+        db_session.close()
+        return { 'data': arp_list }
+    else:
+        db_session.close()
+        return { 'data': arp_list }

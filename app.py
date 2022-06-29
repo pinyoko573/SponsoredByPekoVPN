@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
 from session import get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
-from pstatistics import get_clients, get_protocol_list, get_timestamp_list, get_website_list
+from pstatistics import get_arp_list, get_clients, get_protocol_list, get_timestamp_list, get_website_list
 import messages
 
 from models import *
@@ -89,6 +89,11 @@ def packet_summary(session_id):
 def packet_website(session_id):
     return render_template('packet/website.html', session_id=session_id)
 
+@app.route('/packet/arp', defaults={'session_id': None})
+@app.route('/packet/arp/<session_id>')
+def packet_arp(session_id):
+    return render_template('packet/arp.html', session_id=session_id)
+
 @app.route('/statistics/get_protocol')
 def statistics_get_protocol():
     session_id = request.args.get('session_id')
@@ -108,6 +113,11 @@ def statistics_get_clients():
 def statistics_get_websites():
     session_id = request.args.get('session_id')
     return jsonify(get_website_list(session_id))
+
+@app.route('/statistics/get_arps')
+def statistics_get_arps():
+    session_id = request.args.get('session_id')
+    return jsonify(get_arp_list(session_id))
 
 if __name__ == '__main__':
     app.secret_key = '12345'
