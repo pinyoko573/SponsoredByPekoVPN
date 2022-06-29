@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
-from session import get_session_list, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
+from session import get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
 from pstatistics import get_clients, get_protocol_list, get_timestamp_list, get_website_list
 import messages
 
@@ -60,6 +60,11 @@ def session_modify(session_id):
 @app.route('/session/delete', methods=['POST'])
 def session_delete():
     session_id = request.headers.get('session_id')
+    output = session_erase(session_id)
+    if output == True:
+        return jsonify({'output': True, 'message': messages.session_delete_success})
+    else:
+        return jsonify({'output': False, 'message': messages.session_delete_failed})
 
 @app.route('/session/get_session')
 def session_get_session():

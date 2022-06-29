@@ -17,10 +17,10 @@ class Session(Base):
     date_created = Column(DateTime)
     date_ended = Column(DateTime)
 
-    sessionclient = relationship('SessionClient', back_populates = 'session')
-    website = relationship('Website', back_populates = 'session')
-    protocol = relationship('Protocol', back_populates = 'session')
-    packettime = relationship('PacketTime', back_populates = 'session')
+    sessionclient = relationship('SessionClient', back_populates = 'session', cascade="all, delete")
+    website = relationship('Website', back_populates = 'session', cascade="all, delete")
+    protocol = relationship('Protocol', back_populates = 'session', cascade="all, delete")
+    packettime = relationship('PacketTime', back_populates = 'session', cascade="all, delete")
 
 class SessionClient(Base):
     __tablename__ = 'sessionclient'
@@ -33,8 +33,8 @@ class SessionClient(Base):
     packets_rec = Column(Integer)
 
     session = relationship('Session', back_populates = 'sessionclient')
-    clientarp = relationship('ClientARP', back_populates = 'sessionclient')
-    websiteclient = relationship('WebsiteClient', back_populates = 'sessionclient')
+    clientarp = relationship('ClientARP', back_populates = 'sessionclient', cascade="all, delete")
+    websiteclient = relationship('WebsiteClient', back_populates = 'sessionclient', cascade="all, delete")
 
 class ClientARP(Base):
     __tablename__ = 'clientarp'
@@ -52,7 +52,7 @@ class Website(Base):
     is_https = Column(Integer)
 
     session = relationship('Session', back_populates = 'website')
-    websiteclient = relationship('WebsiteClient', back_populates = 'website')
+    websiteclient = relationship('WebsiteClient', back_populates = 'website', cascade="all, delete")
 
 class WebsiteClient(Base):
     __tablename__ = 'websiteclient'

@@ -75,16 +75,20 @@ def session_stop(session_id):
         db_session.close()
         return True
 
-# def session_delete():
-#     try:
-        
-#     except Exception as e:
-#         print(e)
-#         db_session.close()
-#         return False
-#     else:
-#         db_session.close()
-#         return True
+def session_erase(session_id):
+    try:
+        # Cascade deletes the data of session
+        sessionObj = db_session.query(Session).filter(Session.id == session_id).one()
+        db_session.delete(sessionObj)
+        db_session.commit()
+
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return False
+    else:
+        db_session.close()
+        return True
 
 def get_session_list():
     # Get all rows of Session table
