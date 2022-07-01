@@ -82,13 +82,30 @@ class PacketTime(Base):
 
     session = relationship('Session', back_populates = 'packettime')
 
-# class DNS(Base):
-#     __tablename__ = 'dns'
-#     id = Column(Integer, primary_key=True)
-#     transaction_id = Column(String)
-#     hostname = Column(String)
-#     req_packet_id = Column(Integer, ForeignKey('packet.id'))
-#     res_packet_id = Column(Integer, ForeignKey('packet.id'))
-#     is_flagged = Column(Boolean)
+class DNS(Base):
+    __tablename__ = 'dns'
+    id = Column(Integer, primary_key=True)
+    session_id = Column(Integer, ForeignKey('session.id'))
+    transaction_id = Column(String)
+    hostname = Column(String)
+    is_flagged = Column(Boolean)
 
-#     packet = relationship('Packet', back_populates='dns')
+    session = relationship('Session', back_populates = 'dns')
+    dnsanswer = relationship('DNSAnswer', back_populates = 'dns', cascade="all, delete")
+    dnsanswerexternal = relationship('DNSAnswerExternal', back_populates = 'dns', cascade="all, delete")
+
+class DNSAnswer(Base):
+    __tablename__ = 'dnsanswer'
+    id = Column(Integer, primary_key=True)
+    dns_id = Column(Integer, ForeignKey('dns.id'))
+    ip = Column(String)
+
+    dns = relationship('DNS', back_populates = 'dnsanswer')
+
+class DNSAnswerExternal(Base):
+    __tablename__ = 'dnsanswerexternal'
+    id = Column(Integer, primary_key=True)
+    dns_id = Column(Integer, ForeignKey('dns.id'))
+    ip = Column(String)
+
+    dns = relationship('DNS', back_populates = 'dnsanswer')
