@@ -21,6 +21,7 @@ class Session(Base):
     website = relationship('Website', back_populates = 'session', cascade="all, delete")
     protocol = relationship('Protocol', back_populates = 'session', cascade="all, delete")
     packettime = relationship('PacketTime', back_populates = 'session', cascade="all, delete")
+    dns = relationship('DNS', back_populates = 'session', cascade="all, delete")
 
 class SessionClient(Base):
     __tablename__ = 'sessionclient'
@@ -87,7 +88,7 @@ class DNS(Base):
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey('session.id'))
     transaction_id = Column(String)
-    hostname = Column(String)
+    name = Column(String)
     is_flagged = Column(Boolean)
 
     session = relationship('Session', back_populates = 'dns')
@@ -108,4 +109,4 @@ class DNSAnswerExternal(Base):
     dns_id = Column(Integer, ForeignKey('dns.id'))
     ip = Column(String)
 
-    dns = relationship('DNS', back_populates = 'dnsanswer')
+    dns = relationship('DNS', back_populates = 'dnsanswerexternal')

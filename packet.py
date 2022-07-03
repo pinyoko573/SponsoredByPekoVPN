@@ -1,11 +1,12 @@
 from scapy.all import *
 from scapy.layers.http import HTTPRequest
+from scapy.layers.dns import DNSQR, DNSRR
 from scapy.layers.inet import *
 import cryptography
 
-from utils import is_privateip
+from utils import compare_dns, get_dns_response, is_privateip
 
-from models import ClientARP, SessionClient, Website, Protocol, WebsiteClient, PacketTime
+from models import ClientARP, SessionClient, Website, Protocol, WebsiteClient, PacketTime, DNS, DNSAnswer, DNSAnswerExternal
 from database import db_session
 
 load_layer('tls')
@@ -14,6 +15,7 @@ load_layer('tls')
 clients_list = {}
 website_list = {}
 protocol_list = {}
+dns_list = {}
 packets_sent_client_list = {}
 packets_rec_client_list = {}
 packets_sent_time_list = [0]
@@ -53,6 +55,9 @@ def decap(session_id):
             # If protocol=ARP, store IP on ClientARP table through replies
             if protocol_type == 'ARP':
                 arp_dump(session_id, packet)
+            # If protocol=DNS, store DNS record on DNS table through Resource records packet
+            elif protocol_type == 'DNS':
+                dns_dump(packet)
             # If protocol=HTTP 1 or TLS, store website info on Website table
             elif protocol_type == 'HTTP 1' or protocol_type == 'TLS':
                 website_dump(packet)
@@ -89,6 +94,7 @@ def decap(session_id):
     # Store protocol in protocol table, website in website and websiteclients table
     protocol_dump(session_id)
     website_insert(session_id)
+    dns_insert(session_id)
     sent_rec_packets_insert()
     timestamp_insert(session_id, start_timestamp, min_count)
 
@@ -137,6 +143,7 @@ def arp_dump(session_id, packet):
             db_session.commit()
 
 def website_dump(packet):
+    # Inserts each website into the website list which will be used to store in database later
     is_https = False
     hostname = None
     # If the packet doesnt have httprequest or TLSclienthello layer, skip
@@ -161,6 +168,7 @@ def website_dump(packet):
         website_list[hostname]['clients'].append(clients_list[client_mac])
 
 def website_insert(session_id):
+    # Inserts every website found from the packet into the database
     for website in website_list.keys():
         newWebsite_obj = Website(session_id = session_id, hostname = website, is_https = website_list[website]['is_https'])
         db_session.add(newWebsite_obj)
@@ -173,12 +181,14 @@ def website_insert(session_id):
     db_session.commit()
 
 def protocol_dump(session_id):
+    # Inserts the protocols and count found from the packet into the database
     for protocol in protocol_list.keys():
         newProtocol_obj = Protocol(session_id = session_id, type = protocol, count = protocol_list[protocol])
         db_session.add(newProtocol_obj)
     db_session.commit()
 
 def sent_rec_packets_insert():
+    # Inserts the number of sent and received packets for each client into the database
     for client in clients_list:
         sessionClient_obj = db_session.query(SessionClient).filter(SessionClient.id == clients_list[client]).one()
         sessionClient_obj.packets_sent = packets_sent_client_list[client]
@@ -186,6 +196,7 @@ def sent_rec_packets_insert():
     db_session.commit()
 
 def timestamp_insert(session_id, start_timestamp, min_count):
+    # Inserts the number of sent and received packets per minute into database 
     timestamp = start_timestamp
     for min in range(min_count + 1):
         # sent
@@ -193,4 +204,52 @@ def timestamp_insert(session_id, start_timestamp, min_count):
         db_session.add(newPacketTimeSent_obj)
 
         timestamp += 60 # 1 minute
+    db_session.commit()
+
+def dns_dump(packet):
+    # For DNS we only capture RR as it only contains the important info
+    # note: DOES NOT WORK ON RECURSIVE DNS
+    if packet.haslayer(scapy.layers.dns.DNSRR):
+        # We only accept 1 DNS question as this is a standard
+        name = packet[DNSQR][0].qname.decode('utf-8')
+        transaction_id = packet[scapy.layers.dns.DNS].id
+        # If (name+transaction_id) is already in dns_list, ignore it as it may send multiple response if tcp doesnt respond
+        if str(name)+str(transaction_id) not in dns_list:
+            dns = { 'name': name, 'transaction_id': hex(transaction_id) }
+            rr_layercount = packet[scapy.layers.dns.DNS].ancount
+
+            # DNSRR, containing the IP addresses for DNS
+            answers = []
+            for i in range(rr_layercount):
+                answers.append(packet[DNSRR][i].rdata)
+            answers.sort() # sort for comparison
+            dns['answers'] = answers
+
+            # DNS comparison
+            externaldns_answers = compare_dns(name, answers)
+            if externaldns_answers is None:
+                dns['is_flagged'] = False
+            else:
+                dns['external_answers'] = externaldns_answers
+                dns['is_flagged'] = True
+
+            # store object into dns list
+            dns_list[str(name)+str(transaction_id)] = dns
+
+def dns_insert(session_id):
+    # Insert every DNS record from dns_list into database
+    for dns_obj in dns_list.keys():
+        newDNS_obj = DNS(session_id = session_id, transaction_id = dns_list[dns_obj]['transaction_id'], name = dns_list[dns_obj]['name'], is_flagged = dns_list[dns_obj]['is_flagged'])
+        db_session.add(newDNS_obj)
+        db_session.flush()
+
+        for answer in dns_list[dns_obj]['answers']:
+            newDNSAnswer_obj = DNSAnswer(dns_id = newDNS_obj.id, ip = answer)
+            db_session.add(newDNSAnswer_obj)
+
+        if 'external_answers' in dns_list[dns_obj]:
+            for answer in dns_list[dns_obj]['external_answers']:
+                newExternalDNSAnswer_obj = DNSAnswerExternal(dns_id = newDNS_obj.id, ip = answer)
+                db_session.add(newExternalDNSAnswer_obj)
+
     db_session.commit()
