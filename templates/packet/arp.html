@@ -113,10 +113,9 @@ function initialiseTable(session_id) {
     columns: [
         { data: null,
           render: function(data, type, row) {
-            console.log(data.ip.length);
             if (data.ip.length > 1) {
-                var lock_icon = '<div>'+data.mac+' <i class="fas fa-exclamation-triangle text-danger" data-toggle="tooltip" title="Detected multiple IP Addresses"></i></div>';
-                return $(lock_icon).html();
+                var warning_icon = '<div>'+data.mac+' <i class="fas fa-exclamation-triangle text-danger" data-toggle="tooltip" title="Detected multiple IP Addresses"></i></div>';
+                return $(warning_icon).html();
             }
             return data.mac;
           }

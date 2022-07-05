@@ -1,4 +1,4 @@
-from models import ClientARP, PacketTime, Protocol, SessionClient, Website, WebsiteClient
+from models import DNS, ClientARP, DNSAnswer, DNSAnswerExternal, PacketTime, Protocol, SessionClient, Website, WebsiteClient
 from database import db_session
 
 def get_protocol_list(session_id):
@@ -100,3 +100,43 @@ def get_arp_list(session_id):
     else:
         db_session.close()
         return { 'data': arp_list }
+
+def get_dns_list(session_id):
+    dns_list = []
+    prev_dns_obj = None
+    dns = None
+    try:
+        dnss_obj = db_session.query(DNS, DNSAnswer).filter(DNS.session_id == session_id).outerjoin(DNSAnswer, DNSAnswer.dns_id == DNS.id).all()
+        dns_externals_obj = db_session.query(DNS, DNSAnswerExternal).filter(DNS.session_id == session_id).filter(DNS.is_flagged == True).outerjoin(DNSAnswerExternal, DNSAnswerExternal.dns_id == DNS.id).all()
+        
+        # For every new DNS object, we check if is_flagged is True, if true then loop the dns_external obj and obtain the external dns ip
+        # If it the same DNS object, loop the dnss_obj
+        dns_external_loop_count = 0
+        for dns_object in dnss_obj:
+            # If it matches with the previous dns
+            if dns_object.DNS == prev_dns_obj:
+                dns["answers"].append(dns_object.DNSAnswer.ip)
+            # If doesnt match with previous dns, means it is a new dns record
+            else:
+                dns_list.append(dns)
+                prev_dns_obj = dns_object.DNS
+
+                # Remove sa instance object and add array of answers and external_answers
+                dns = dns_object.DNS.__dict__
+                del dns['_sa_instance_state']
+                dns["external_answers"] = []
+                dns["answers"] = [dns_object.DNSAnswer.ip]
+
+                if dns['is_flagged']:
+                    while dns_external_loop_count != len(dns_externals_obj) and dns_externals_obj[dns_external_loop_count].DNS == prev_dns_obj:
+                        dns["external_answers"].append(dns_externals_obj[dns_external_loop_count].DNSAnswerExternal.ip)
+                        dns_external_loop_count += 1
+
+        dns_list.pop(0)
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return { 'data': None }
+    else:
+        db_session.close()
+        return { 'data': dns_list }
