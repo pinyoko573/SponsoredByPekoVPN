@@ -51,6 +51,7 @@ class Website(Base):
     session_id = Column(Integer, ForeignKey('session.id'))
     hostname = Column(String)
     is_https = Column(Integer)
+    threat_type = Column(String)
 
     session = relationship('Session', back_populates = 'website')
     websiteclient = relationship('WebsiteClient', back_populates = 'website', cascade="all, delete")

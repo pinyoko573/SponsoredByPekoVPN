@@ -4,6 +4,8 @@ import re
 import requests
 import numpy
 
+from secret import api_key
+
 rfc1918 = re.compile('(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)')
 
 def is_privateip(ip):
@@ -54,3 +56,26 @@ def compare_dns(name, answers1):
         return answers2
     else:
         return None
+
+# def get_website_safelookup(websites):
+#     # Fetch Google's Safe Browsing Lookup API
+#     api_url = 'https://safebrowsing.googleapis.com/v4/threatMatches:find'
+#     params = {'key': api_key}
+#     headers = {'Content-Type': 'application/json'}
+#     body = {
+#         'client': {
+#             'clientId': 'SponsoredByPekoVPN',
+#             'clientVersion': '1.5.2'    
+#         },
+#         'threatInfo': {
+#             'threatTypes': ['MALWARE', 'SOCIAL_ENGINEERING'],
+#             'platformTypes': ['WINDOWS'],
+#             'threatEntryTypes': ['URL'],
+#             'threatEntries': []
+#         }
+#     }
+
+#     for website in websites:
+#         body['threatInfo']['threatEntries'].append({'url': website})
+    
+#     response = requests.post(url=api_url, params=params, headers=headers, data=json.dumps(body))
