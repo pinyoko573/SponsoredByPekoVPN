@@ -84,10 +84,10 @@
 
               // Disable delete button if is_active is True
               if(data.is_active) {
-                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled')
+                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled');
               } else {
-                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled')
-                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled')
+                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
               }
 
               return html.html();
@@ -107,6 +107,8 @@
       content: 'Are you sure you want to end the session? This cannot be undone.',
       buttons: {
         confirm: function() {
+          $('.loader').show();
+
           $.ajax({
             url: "session/stop",
             method: "POST",
@@ -114,8 +116,16 @@
             success: function(result) {
               if (result.output) {
                 toastr.success(result.message)
+
+                // Since it is not active anymore, disable edit and stop button
+                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.deleteButton').removeClass('disabled').removeAttr('disabled');
+
+                $('.loader').hide();
               } else {
                 toastr.error(result.message)
+                $('.loader').hide();
               }
             }
           })
@@ -133,6 +143,8 @@
       content: 'Are you sure you want to delete the session? This cannot be undone.',
       buttons: {
         confirm: function() {
+          $('.loader').show();
+
           $.ajax({
             url: "session/delete",
             method: "POST",
@@ -140,8 +152,11 @@
             success: function(result) {
               if (result.output) {
                 toastr.success(result.message)
+                table.ajax.reload();
+                $('.loader').hide();
               } else {
                 toastr.error(result.message)
+                $('.loader').hide();
               }
             }
           })

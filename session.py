@@ -127,75 +127,68 @@ def get_ap_list():
             i['ESSID'] = i['ESSID'][:-1]
         
         return { 'data': ap_list }
-    except:
+    except Exception as e:
+        print(e)
         return { 'data': None }
 
 
 def get_client_list(session_id):
-    if os.path.exists('ap_mac-01.csv'):
-        os.remove('ap_mac-01.csv')
+    try:
+        if os.path.exists('ap_mac-01.csv'):
+            os.remove('ap_mac-01.csv')
 
-    # Gets the session object based on ID
-    session_obj = db_session.query(Session).filter(Session.id == session_id).one()
-    ap_mac = session_obj.mac
+        # Gets the session object based on ID
+        session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+        ap_mac = session_obj.mac
 
-    # Gets the list of clients that are already in SessionClient table
-    clients_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id, SessionClient.is_ap == False).all()
-    client_list = []
-    for client_obj in clients_obj:
-        client = client_obj.__dict__
-        client['is_success'] = True
-        client['# packets'] = '-'
-        del client['_sa_instance_state']
+        # Gets the list of clients that are already in SessionClient table
+        clients_obj = db_session.query(SessionClient).filter(SessionClient.session_id == session_id, SessionClient.is_ap == False).all()
+        client_list = []
+        for client_obj in clients_obj:
+            client = client_obj.__dict__
+            client['is_success'] = True
+            client['# packets'] = '-'
+            del client['_sa_instance_state']
 
-        client_list.append(client)
+            client_list.append(client)
 
-    # Retrieves list of clients communicating with AP using airodump and output into csv
-    process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
-    sleep(10) # Time (in seconds) to stop the AP capture
-    process.terminate()
-    process.kill()
-    process.wait()
+        # Retrieves list of clients communicating with AP using airodump and output into csv
+        process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
+        sleep(10) # Time (in seconds) to stop the AP capture
+        process.terminate()
+        process.kill()
+        process.wait()
 
-    # Convert csv to json and check if the client already existed in table. Else, add into client_list
-    scan_client_list = csv_to_json('ap_mac-01.csv', 1)
-    for scan_client in scan_client_list:
-        # Check if scan_client existed in client_list using MAC
-        is_existed = False
-        for client in client_list:
-            if client['mac'] == scan_client['Station MAC']:
-                is_existed = True
-                break
-        
-        if not is_existed:
-            # Get vendor
-            vendor = ''
-            try:
-                vendor = MacLookup().lookup(scan_client['Station MAC'])
-            except:
-                vendor = 'Unknown'
+        # Convert csv to json and check if the client already existed in table. Else, add into client_list
+        scan_client_list = csv_to_json('ap_mac-01.csv', 1)
+        for scan_client in scan_client_list:
+            # Check if scan_client existed in client_list using MAC
+            is_existed = False
+            for client in client_list:
+                if client['mac'] == scan_client['Station MAC']:
+                    is_existed = True
+                    break
+            
+            if not is_existed:
+                # Get vendor
+                vendor = ''
+                try:
+                    vendor = MacLookup().lookup(scan_client['Station MAC'])
+                except:
+                    vendor = 'Unknown'
 
-            scan_client['vendor'] = vendor
-            scan_client['mac'] = scan_client['Station MAC']
-            # scan_client['BSSID'] = scan_client['BSSID'][:-1]
-            scan_client['is_success'] = False
-            client_list.append(scan_client)
+                scan_client['vendor'] = vendor
+                scan_client['mac'] = scan_client['Station MAC']
+                # scan_client['BSSID'] = scan_client['BSSID'][:-1]
+                scan_client['is_success'] = False
+                client_list.append(scan_client)
 
-    # Convert csv to json
-    # client_list = csv_to_json('ap_mac-01.csv', 1)
-    # for client in client_list:
-    #     vendor = ''
-    #     try:
-    #         vendor = MacLookup().lookup(client['Station MAC'])
-    #     except:
-    #         vendor = 'Unknown'
-        
-    #     client['vendor'] = vendor
-    #     client['BSSID'] = client['BSSID'][:-1]
-
-
-    db_session.close()
-    return { 'data': client_list }
+        db_session.close()
+        return { 'data': client_list }
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return { 'data': None }
 
 def force_eapol_handshake(session_id, client_data):
     # Retrieves AP MAC

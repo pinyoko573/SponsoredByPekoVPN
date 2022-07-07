@@ -72,11 +72,15 @@
             { data: "BSSID" },
             { data: "Privacy" },
             { data: "channel" }
-          ]
+          ],
+          "drawCallback": function(settings, json) {
+            $('.loader').hide();
+          }
         });
     });
 
     $('#refreshButton').on('click', function(event) {
+      $('.loader').show();
       table.ajax.reload();
     });
 
