@@ -36,10 +36,10 @@
         </a>
         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                <a class="collapse-item" href="{{ url_for('packet_summary') }}">Summary</a>
-                <a class="collapse-item" href="{{ url_for('packet_website') }}">Website List</a>
-                <a class="collapse-item" href="{{ url_for('packet_arp') }}">ARP Table</a>
-                <a class="collapse-item" href="{{ url_for('packet_dns') }}">DNS Record</a>
+                <a class="collapse-item" data-url="{{ url_for('packet_summary') }}" href="{{ url_for('packet_summary') }}">Summary</a>
+                <a class="collapse-item" data-url="{{ url_for('packet_website') }}" href="{{ url_for('packet_website') }}">Website List</a>
+                <a class="collapse-item" data-url="{{ url_for('packet_arp') }}" href="{{ url_for('packet_arp') }}">ARP Table</a>
+                <a class="collapse-item" data-url="{{ url_for('packet_dns') }}" href="{{ url_for('packet_dns') }}">DNS Record</a>
             </div>
         </div>
     </li>

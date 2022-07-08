@@ -25,12 +25,16 @@ def decap(session_id):
     # Retrieve all the clients, store the MAC address and sessionclient_id on a dictionary
     try:
         sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id)
+        # If there are no clients being captured
+        if len(sessionClient_objs) < 1:
+            return
+
         for sessionClient_obj in sessionClient_objs:
             # Decapitalize mac address as scapy reads it in lower case
             clients_list[sessionClient_obj.mac.lower()] = sessionClient_obj.id
     except Exception as e:
         print(e)
-        pass
+        return
 
     # Loops every frame and extract out information
     packet_counter = 0

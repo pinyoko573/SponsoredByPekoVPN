@@ -53,6 +53,17 @@
       {% include 'footer.html' %}
     </div>
   </div>
+
+    <!-- Jinja code to display error message when creating session -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <script>
+          toastr.error("{{ message }}")
+        </script>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 </body>
 
 <script>
@@ -118,15 +129,15 @@
                 toastr.success(result.message)
 
                 // Since it is not active anymore, disable edit and stop button
-                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
-                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
-                html.find('.deleteButton').removeClass('disabled').removeAttr('disabled');
-
-                $('.loader').hide();
+                // html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
+                // html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
+                // html.find('.deleteButton').removeClass('disabled').removeAttr('disabled');
               } else {
                 toastr.error(result.message)
-                $('.loader').hide();
               }
+
+              table.ajax.reload();
+              $('.loader').hide();
             }
           })
         }

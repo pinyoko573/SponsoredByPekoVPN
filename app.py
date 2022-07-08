@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
-from session import get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
+from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
 from pstatistics import get_arp_list, get_clients, get_dns_list, get_protocol_list, get_timestamp_list, get_website_list
 import messages
 
@@ -22,7 +22,12 @@ def session():
 @app.route('/session/create', methods=['GET', 'POST'])
 def session_create():
     if request.method == 'GET':
-        return render_template('session/session_create.html')
+        # Check if any other session is active
+        if get_is_active():
+            flash(messages.session_is_active, 'failed')
+            return redirect(url_for('session'))
+        else:
+            return render_template('session/session_create.html')
     elif request.method == 'POST':
         # Received headers: passphrase, apInfo
         apInfo = request.form.get('apInfo')

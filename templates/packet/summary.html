@@ -125,12 +125,19 @@
 
     // On change function if dropdown is modified
     $('#dropdown').on('change', function() {
+        dropdown_session_id = this.value
         if (this.value != "") {
             get_protocol(this.value);
             get_timestamp(this.value);
             table.ajax.url('/statistics/get_clients?session_id='+this.value).load();
             $("#summary_section").removeClass("d-none");
         }
+
+        // Change the sidemenu url for each collapse item in sidebar
+        $(".collapse-item").each(function() {
+            new_url = $(this).attr("data-url") + (dropdown_session_id ? "/"+dropdown_session_id : "");
+            $(this).attr("href", new_url)
+        });
     });
 
     function get_protocol(session_id) {
@@ -200,7 +207,8 @@
             curveType: 'function',
             legend: { position: 'none' },
             vAxis: { viewWindow: { min: 0 }},
-            hAxis: { format: 'HH:mm' }
+            hAxis: { format: 'HH:mm' },
+            legend: { position: 'bottom' }
         };
         var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
         chart.draw(data, options);

@@ -67,6 +67,7 @@ def session_stop(session_id):
         # Unpacket the packet file and store information to database
         decap(session_id)
         
+        db_session.commit()
     except Exception as e:
         print(e)
         db_session.close()
@@ -229,4 +230,13 @@ def force_eapol_handshake(session_id, client_data):
         return True
     else:
         db_session.close()
+        return False
+
+def get_is_active():
+    # Check if any session is active and restricts the user from creating
+    no_of_active_sessions = db_session.query(Session).filter(Session.is_active == True).count()
+    db_session.close()
+    if no_of_active_sessions > 0:
+        return True
+    else:
         return False

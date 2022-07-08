@@ -95,10 +95,17 @@
 
     // On change function if dropdown is modified
     $('#dropdown').on('change', function() {
+        dropdown_session_id = this.value
         if (this.value != "") {
             table.ajax.url('/statistics/get_websites?session_id='+this.value).load();
             $("#website_section").removeClass("d-none");
         }
+
+        // Change the sidemenu url for each collapse item in sidebar
+        $(".collapse-item").each(function() {
+            new_url = $(this).attr("data-url") + (dropdown_session_id ? "/"+dropdown_session_id : "");
+            $(this).attr("href", new_url)
+        });
     });
 
     function initialiseTable(session_id) {
