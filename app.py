@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
-from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop
+from werkzeug.utils import secure_filename
+from packet import decap
+from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop, session_upload_create, session_upload_decrypt
 from pstatistics import get_arp_list, get_clients, get_dns_list, get_protocol_list, get_timestamp_list, get_website_list
 import messages
 
@@ -29,7 +31,7 @@ def session_create():
         else:
             return render_template('session/session_create.html')
     elif request.method == 'POST':
-        # Received headers: passphrase, apInfo
+        # Received data: passphrase, apInfo
         apInfo = request.form.get('apInfo')
         passphrase = request.form.get('passphrase')
 
@@ -40,6 +42,36 @@ def session_create():
             # Stores information to database and redirect to modify page
             flash(messages.session_create_success, 'success')
             return redirect(url_for('session_modify', session_id = session_id))
+
+@app.route('/session/upload', methods=['GET', 'POST'])
+def session_upload():
+    if request.method == 'GET':
+        return render_template('session/session_upload.html')
+    elif request.method == 'POST':
+        try:
+            # Received data: essid, passphrase, authentication and a file
+            essid = request.form.get('essid')
+            passphrase = request.form.get('passphrase')
+            authentication = request.form.get('authentication')
+
+            # Generate session_id with information on top
+            session_id = session_upload_create(essid, passphrase, authentication)
+            
+            # Get file and save, then decrypt file and scan all mac addresses
+            file = request.files['file']
+            filename = 'session-{}.cap'.format(session_id)
+            file.save(secure_filename(filename))
+            session_upload_decrypt(session_id, essid, passphrase)
+
+            # Finally, decrypt all the packets
+            decap(session_id)
+        except Exception as e:
+            print(e)
+            flash(messages.session_upload_failed, 'error')
+        else:
+            flash(messages.session_upload_success, 'success')
+
+        return redirect(url_for('session'))
 
 @app.route('/session/stop', methods=['POST'])
 def session_end():
