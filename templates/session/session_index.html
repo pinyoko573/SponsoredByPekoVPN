@@ -98,8 +98,8 @@
               html.find('.editButton').attr('onclick', 'window.location.href='+url_path);
 
               // Add url path to info path
-                var info_url_path = ' "packet/summary/' + data.id + ' " ';
-                html.find('.infoButton').attr('onclick', 'window.location.href=' + info_url_path);
+              var info_url_path = ' "packet/summary/' + data.id + ' " ';
+              html.find('.infoButton').attr('onclick', 'window.location.href=' + info_url_path);
 
               // Disable delete button if is_active is True
               if(data.is_active) {
