@@ -4,7 +4,7 @@ import re
 import requests
 import numpy
 
-from secret import api_key
+# from secret import api_key
 
 rfc1918 = re.compile('(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)')
 

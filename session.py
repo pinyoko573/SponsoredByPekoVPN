@@ -1,6 +1,6 @@
 from time import sleep
 from utils import csv_to_json
-from packet import decap
+from packet import decap, scan_macadress
 from subprocess import Popen, PIPE
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
@@ -49,6 +49,34 @@ def session_start(apInfo, passphrase):
         db_session.close()
         return session_id
 
+def session_upload_create(essid, passphrase, authentication):
+    session_id = None
+    try:
+        # Generates session id in the Session table
+        newSession_obj = Session(essid = essid, passphrase = passphrase, authentication = authentication, mac = "Unknown", date_created = datetime.now(), date_ended = None, is_active = False)
+
+        db_session.add(newSession_obj)
+        db_session.flush()
+
+        session_id = newSession_obj.id
+        db_session.commit()
+    except Exception as e:
+        print(e)
+        db_session.close()
+        return session_id
+    else:
+        db_session.close()
+        return session_id
+
+def session_upload_decrypt(session_id, essid, passphrase):
+    # Decrypt the encrypted WPA/WPA2 packets
+    filename = 'session-{}.cap'.format(session_id)
+    process = Popen(['airdecap-ng', '-e', essid, '-p', passphrase, filename], stdin=PIPE, stdout=PIPE)
+    process.wait()
+
+    # get all mac addresses after file decrypted
+    scan_macadress(session_id)
+
 def session_stop(session_id):
     try:
         # Get the record from session table and update the active and date_ended
@@ -67,6 +95,7 @@ def session_stop(session_id):
         # Unpacket the packet file and store information to database
         decap(session_id)
         
+        db_session.commit()
     except Exception as e:
         print(e)
         db_session.close()
@@ -229,4 +258,13 @@ def force_eapol_handshake(session_id, client_data):
         return True
     else:
         db_session.close()
+        return False
+
+def get_is_active():
+    # Check if any session is active and restricts the user from creating
+    no_of_active_sessions = db_session.query(Session).filter(Session.is_active == True).count()
+    db_session.close()
+    if no_of_active_sessions > 0:
+        return True
+    else:
         return False

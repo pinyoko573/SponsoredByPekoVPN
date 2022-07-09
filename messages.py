@@ -8,6 +8,12 @@ session_delete_success = "Session deleted successfully!"
 
 session_delete_failed = "Unable to delete session."
 
+session_is_active = "One of the sessions is currently active. Please end the session before creating a new one."
+
+session_upload_success = "Session uploaded successfully!"
+
+session_upload_failed = "Failed to import session."
+
 handshake_success = "Handshake successfully captured!"
 
 handshake_failed = "Did not capture the 4 handshake packets, please try again."

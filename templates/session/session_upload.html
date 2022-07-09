@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+{% include 'header.html' %}
+
+<body>
+  <div id="wrapper">
+    {% include 'sidebar.html' %}
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <section id="content">
+        <div class="container-fluid mt-3">
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h5 class="m-0 font-weight-bold text-primary">Create Session (Upload Capture File)</h6>
+            </div>
+            <div class="card-body">
+              <div>
+                <p>
+                  <b>Highlight</b> the row of the Access Point that you wish to analyse, then input the passphrase and click on Submit.<br>
+                  Note that if the wrong passphrase is entered, you would need to delete and recreate the session.
+                </p>
+              </div>
+
+              <form action="/session/upload" method="POST" enctype="multipart/form-data">
+                <div class="mb-3 mt-3">
+                  <div class="form-group">
+                    <label for="inputessid">Access Point Name</label>
+                    <input class="form-control col-lg-4" id="inputessid" aria-describedby="inputessidhelp" name="essid" placeholder="Enter Access Point Name">
+                    <small id="inputessidhelp" class="form-text text-muted">Access Point Name must exactly be the same as the AP you have captured.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="inputpassphrase">AP Passphrase</label>
+                    <input type="password" class="form-control col-lg-4" id="inputpassphrase" aria-describedby="inputpassphrasehelp" name="passphrase" placeholder="Enter Passphrase">
+                    <small id="inputpassphrasehelp" class="form-text text-muted">Leave blank if Authentication is None.</small>
+                  </div>
+
+                  <label>Authentication</label>
+                  <div class="form-group">
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="authentication" id="radioNone" value="None">
+                      <label class="form-check-label" for="inlineRadio1">None</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="authentication" id="radioWEP" value="WEP">
+                      <label class="form-check-label" for="radioWEP">WEP</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="authentication" id="radioWPA" value="WPA">
+                      <label class="form-check-label" for="radioWPA">WPA/WPA2</label>
+                    </div>
+                  </div>
+
+                  <label>Upload Capture File (.cap/.pcap)</label>
+                  <div class="form-group">
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="inputFile" name="file" accept=".cap,.pcap">
+                      <label class="custom-file-label col-lg-4" for="inputFile">Choose file</label>
+                    </div>
+                  </div>
+
+                  <div class="form-group float-right">
+                    <input type="submit" class="btn btn-success" id="submitButton" value="Submit">
+                  </div>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+      
+      {% include 'footer.html' %}
+    </div>
+  </div>
+</body>
+
+<script>
+    var table;
+
+    $(document).ready(function() {
+        // set navigation bar to active
+        $('#nav-session').addClass('active');
+
+        
+    });
+</script>

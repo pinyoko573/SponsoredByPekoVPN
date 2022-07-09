@@ -23,7 +23,10 @@
                   View your Sessions here.
                 </p>
               </span>
-              <a class="btn btn-success float-right mb-2" href="{{ url_for('session_create') }}" role="button">Create</a>
+              <span class="float-right">
+                <a class="btn btn-primary mb-2" href="{{ url_for('session_upload') }}" role="button">Create (Upload)</a>
+                <a class="btn btn-success mb-2" href="{{ url_for('session_create') }}" role="button">Create (Scan)</a>
+              </span>
 
               <div class="table-responsive">
                 <table id="table_id" class="display">
@@ -53,6 +56,17 @@
       {% include 'footer.html' %}
     </div>
   </div>
+
+    <!-- Jinja code to display error message when creating session -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <script>
+          toastr.error("{{ message }}")
+        </script>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 </body>
 
 <script>
@@ -84,8 +98,8 @@
               html.find('.editButton').attr('onclick', 'window.location.href='+url_path);
 
               // Add url path to info path
-                var info_url_path = ' "packet/summary/' + data.id + ' " ';
-                html.find('.infoButton').attr('onclick', 'window.location.href=' + info_url_path);
+              var info_url_path = ' "packet/summary/' + data.id + ' " ';
+              html.find('.infoButton').attr('onclick', 'window.location.href=' + info_url_path);
 
               // Disable delete button if is_active is True
               if(data.is_active) {
@@ -123,15 +137,15 @@
                 toastr.success(result.message)
 
                 // Since it is not active anymore, disable edit and stop button
-                html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
-                html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
-                html.find('.deleteButton').removeClass('disabled').removeAttr('disabled');
-
-                $('.loader').hide();
+                // html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
+                // html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
+                // html.find('.deleteButton').removeClass('disabled').removeAttr('disabled');
               } else {
                 toastr.error(result.message)
-                $('.loader').hide();
               }
+
+              table.ajax.reload();
+              $('.loader').hide();
             }
           })
         }

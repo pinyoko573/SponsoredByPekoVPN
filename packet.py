@@ -9,6 +9,8 @@ from utils import compare_dns, get_dns_response, is_privateip
 from models import ClientARP, SessionClient, Website, Protocol, WebsiteClient, PacketTime, DNS, DNSAnswer, DNSAnswerExternal
 from database import db_session
 
+from mac_vendor_lookup import MacLookup
+
 load_layer('tls')
 
 # variable to store list of hostnames and clients who visited website to prevent duplicates
@@ -24,13 +26,17 @@ packets_rec_time_list = [0]
 def decap(session_id):
     # Retrieve all the clients, store the MAC address and sessionclient_id on a dictionary
     try:
-        sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id)
+        sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id).all()
+        # If there are no clients being captured
+        if len(sessionClient_objs) < 1:
+            return
+
         for sessionClient_obj in sessionClient_objs:
             # Decapitalize mac address as scapy reads it in lower case
             clients_list[sessionClient_obj.mac.lower()] = sessionClient_obj.id
     except Exception as e:
         print(e)
-        pass
+        return
 
     # Loops every frame and extract out information
     packet_counter = 0
@@ -253,3 +259,28 @@ def dns_insert(session_id):
                 db_session.add(newExternalDNSAnswer_obj)
 
     db_session.commit()
+
+def scan_macadress(session_id):
+    # Scans the entire packets and collects all MAC addresses
+    filename = 'session-{}-dec.cap'.format(session_id)
+
+    clients_list = {}
+
+    for packet in PcapReader(filename):
+        sent_mac = packet[Ether].src.upper()
+        if sent_mac not in clients_list:
+            clients_list[sent_mac] = None
+
+    # Gets the vendor for every mac address and add each client into SessionClient table
+    for mac in clients_list.keys():
+        vendor = ''
+        try:
+            vendor = MacLookup().lookup(mac)
+        except:
+            vendor = 'Unknown'
+
+        newSessionClient_obj = SessionClient(session_id=session_id, mac=mac, vendor=vendor, is_ap=False)
+        db_session.add(newSessionClient_obj)
+
+    db_session.commit()
+    db_session.close()
