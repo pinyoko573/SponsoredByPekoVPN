@@ -22,6 +22,7 @@
                 </p>
               </span>
               <button type="button" class="btn btn-primary float-right mb-2" id="refreshButton">Refresh</button>
+              <!-- <button type="button" class="btn btn-primary mb-2" id="stopButton">Stop</button> -->
               <div class="table-responsive">
                 <table id="table_id" class="display">
                     <thead>
@@ -59,8 +60,10 @@
 
 <script>
     var table;
+    var session_id;
 
     $(document).ready(function() {
+        session_id = JSON.parse('{{ session_id | tojson }}');
         // set navigation bar to active
         $('#nav-session').addClass('active');
 
@@ -80,7 +83,8 @@
             { data: null,
               render: function(data, type, row) {
                 if (!data.is_success)
-                  return '<button type="button" class="btn btn-primary">Force Handshake</button>'
+                  return '<button type="button" class="btn btn-primary btnHandshakeStart">Force Handshake</button>'+
+                   '<button type="button" class="btn btn-danger btnHandshakeStop d-none">Stop</button>'
                 else
                   return '<button type="button" class="btn btn-success" disabled>Success</button>'
               },
@@ -98,34 +102,90 @@
       table.ajax.reload();
     });
 
-    $('#table_id tbody').on('click', 'button', function() {
+    $('#table_id tbody').on('click', '.btnHandshakeStart', function() {
+      toastr.info("Performing handshake process now. Please wait...")
+
+      $(".btnHandshakeStart").prop('disabled', true); // disable all buttons
+
       var button = $(this);
-      $(this).text('Communicating..');
-      $(this).removeClass('btn-primary')
-      $(this).addClass('btn-info');
-      $(this).prop('disabled', true);
+      button.addClass("d-none"); // hide the current button
+      button.siblings('.btnHandshakeStop').removeClass("d-none"); // show display of stop button
 
       var data = table.row($(this).parents('tr')).data();
       $.ajax({
-        url: "",
+        url: "/session/handshake/start/"+session_id,
         method: "POST",
         headers: { client_data: JSON.stringify(data) },
         success: function(result) {
+          $(".btnHandshakeStart").prop('disabled', false); // enable all buttons
+          button.siblings('.btnHandshakeStop').addClass("d-none"); // hide current stop button
+
+          button.removeClass('d-none');
           if (result.output) {
-            button.removeClass('btn-info')
+            button.removeClass('btnHandshakeStart'); // remove handshake class since it is successful
+
+            button.text('Success');
+            button.removeClass('btn-info');
             button.addClass('btn-success');
-            button.text('Captured Successful');
+            button.prop('disabled', true);
 
             toastr.success(result.message)
           } else {
-            button.text('Force Handshake');
-            button.removeClass('btn-info')
-            button.addClass('btn-primary');
-            button.prop('disabled', false);
-
             toastr.error(result.message)
           }
         }
       })
     });
+
+    $('#table_id tbody').on('click', '.btnHandshakeStop', function() {
+      var button = $(this);
+      button.prop('disabled', true);
+
+      $.ajax({
+        url: "/session/handshake/stop",
+        method: "POST",
+        success: function(result) {
+          button.prop('disabled', false);
+          toastr.info(result.message)
+        }
+      })
+    });
+
+    // $('#stopButton').on('click', function(event) {
+    //   $.ajax({
+    //     url: "/session/handshake/stop",
+    //     method: "POST"
+    //   })
+    // });
+
+    // $('#table_id tbody').on('click', 'button', function() {
+    //   var button = $(this);
+    //   $(this).text('Communicating..');
+    //   $(this).removeClass('btn-primary')
+    //   $(this).addClass('btn-info');
+    //   $(this).prop('disabled', true);
+
+    //   var data = table.row($(this).parents('tr')).data();
+    //   $.ajax({
+    //     url: "/session/handshake/start/"+session_id,
+    //     method: "POST",
+    //     headers: { client_data: JSON.stringify(data) },
+    //     success: function(result) {
+    //       if (result.output) {
+    //         button.removeClass('btn-info')
+    //         button.addClass('btn-success');
+    //         button.text('Captured Successful');
+
+    //         toastr.success(result.message)
+    //       } else {
+    //         button.text('Force Handshake');
+    //         button.removeClass('btn-info')
+    //         button.addClass('btn-primary');
+    //         button.prop('disabled', false);
+
+    //         toastr.error(result.message)
+    //       }
+    //     }
+    //   })
+    // });
 </script>
