@@ -14,7 +14,7 @@
         <div class="container-fluid mt-3">
           <div class="card shadow mb-4">
             <div class="card-header py-3">
-              <h5 class="m-0 font-weight-bold text-primary">Session List</h6>
+              <h5 class="m-0 font-weight-bold text-primary">Session List</h5>
             </div>
             <div class="card-body">
 
@@ -103,10 +103,11 @@
 
               // Disable delete button if is_active is True
               if(data.is_active) {
-                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.infoButton').addClass('disabled').attr('disabled', 'disabled');
               } else {
                 html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
                 html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled');
               }
 
               return html.html();
