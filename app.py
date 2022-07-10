@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
 from werkzeug.utils import secure_filename
+import threading, queue
 from packet import decap
-from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, force_eapol_handshake, session_stop, session_upload_create, session_upload_decrypt
+from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, eapol_capture_start, eapol_capture_stop, session_stop, session_upload_create, session_upload_decrypt
 from pstatistics import get_arp_list, get_clients, get_dns_list, get_protocol_list, get_timestamp_list, get_website_list
 import messages
 
@@ -12,6 +13,8 @@ from database import engine, Base
 # Base.metadata.create_all(bind=engine)
 
 app = Flask(__name__)
+
+is_running_process = False
 
 @app.route('/')
 def index():
@@ -87,12 +90,22 @@ def session_end():
 def session_modify(session_id):
     if request.method == 'GET':
         return render_template('session/session_modify.html', session_id=session_id)
-    elif request.method == 'POST':
-        output = force_eapol_handshake(session_id, request.headers['client_data'])
-        if output == True:
-            return jsonify({'output': True, 'message': messages.handshake_success})
-        else:
-            return jsonify({'output': False, 'message': messages.handshake_failed})
+
+@app.route('/session/handshake/start/<session_id>', methods=['POST'])
+def session_handshake_start(session_id):
+    q = queue.Queue()
+    threading.Thread(target=eapol_capture_start, args=(session_id, request.headers['client_data'], q)).start()
+    result = q.get()
+
+    if result:
+        return jsonify({'output': True, 'message': messages.handshake_success})
+    else:
+        return jsonify({'output': False, 'message': messages.handshake_failed})
+
+@app.route('/session/handshake/stop', methods=['POST'])
+def session_handshake_stop():
+    eapol_capture_stop()
+    return jsonify({'output': True, 'message': messages.handshake_stop})
 
 @app.route('/session/delete', methods=['POST'])
 def session_delete():

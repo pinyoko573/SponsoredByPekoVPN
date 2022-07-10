@@ -16,4 +16,6 @@ session_upload_failed = "Failed to import session."
 
 handshake_success = "Handshake successfully captured!"
 
-handshake_failed = "Did not capture the 4 handshake packets, please try again."
+handshake_stop = "Stopping handshake process..."
+
+handshake_failed = "Either handshake has been stopped, or an error has occurred."

@@ -28,7 +28,7 @@ def decap(session_id):
     try:
         sessionClient_objs = db_session.query(SessionClient).filter(SessionClient.session_id == session_id).all()
         # If there are no clients being captured
-        if len(sessionClient_objs) < 1:
+        if len(sessionClient_objs) <= 1:
             return
 
         for sessionClient_obj in sessionClient_objs:
