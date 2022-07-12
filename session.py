@@ -69,10 +69,10 @@ def session_upload_create(essid, passphrase, authentication):
         db_session.close()
         return session_id
 
-def session_upload_decrypt(session_id, essid, passphrase):
+def session_upload_decrypt(session_id, essid, passphrase, authentication):
     # Decrypt the encrypted WPA/WPA2 packets
     filename = 'session-{}.cap'.format(session_id)
-    process = Popen(['airdecap-ng', '-e', essid, '-p', passphrase, filename], stdin=PIPE, stdout=PIPE)
+    process = Popen(['airdecap-ng', '-e', essid, filename] + set_authentication_type(authentication, passphrase), stdin=PIPE, stdout=PIPE)
     process.wait()
 
     # get all mac addresses after file decrypted
@@ -90,12 +90,11 @@ def session_stop(session_id):
 
         # Decrypt the encrypted WPA/WPA2 packets
         filename = 'session-{}.cap'.format(session_obj.id)
-        process = Popen(['airdecap-ng', '-e', session_obj.essid, '-p', session_obj.passphrase, filename], stdin=PIPE, stdout=PIPE)
+        process = Popen(['airdecap-ng', '-e', session_obj.essid, filename] + set_authentication_type(session_obj.privacy, session_obj.passphrase), stdin=PIPE, stdout=PIPE)
         process.wait()
 
         # Unpacket the packet file and store information to database
         decap(session_id)
-        
         db_session.commit()
     except Exception as e:
         print(e)
@@ -321,3 +320,15 @@ def get_is_active():
         return True
     else:
         return False
+
+def set_authentication_type(auth, passphrase):
+    # Gets the auth type and return the specific parameters for airdecap-ng
+    if 'OPN' in auth:
+        print('im OPN')
+        return ''
+    if 'WEP' in auth:
+        print('im WEP')
+        return ['-w', passphrase]
+    if 'WPA' in auth:
+        print('im WPA')
+        return ['-p', passphrase]

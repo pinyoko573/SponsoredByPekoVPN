@@ -62,7 +62,12 @@
     {% if messages %}
       {% for category, message in messages %}
         <script>
-          toastr.error("{{ message }}")
+          if ("{{ category }}" == "success") {
+            toastr.success("{{ message }}");
+          }
+          else {
+            toastr.error("{{ message }}");
+          }
         </script>
       {% endfor %}
     {% endif %}
@@ -104,10 +109,10 @@
               // Disable delete button if is_active is True
               if(data.is_active) {
                 html.find('.infoButton').addClass('disabled').attr('disabled', 'disabled');
+                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled');
               } else {
                 html.find('.editButton').addClass('disabled').attr('disabled', 'disabled');
                 html.find('.stopButton').addClass('disabled').attr('disabled', 'disabled');
-                html.find('.deleteButton').addClass('disabled').attr('disabled', 'disabled');
               }
 
               return html.html();

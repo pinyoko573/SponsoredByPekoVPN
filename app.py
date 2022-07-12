@@ -64,7 +64,7 @@ def session_upload():
             file = request.files['file']
             filename = 'session-{}.cap'.format(session_id)
             file.save(secure_filename(filename))
-            session_upload_decrypt(session_id, essid, passphrase)
+            session_upload_decrypt(session_id, essid, passphrase, authentication)
 
             # Finally, decrypt all the packets
             decap(session_id)
