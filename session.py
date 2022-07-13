@@ -4,7 +4,7 @@ from packet import decap, scan_macadress
 from subprocess import Popen, PIPE
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
-import queue
+import options
 import signal
 import os
 import json
@@ -24,8 +24,8 @@ def session_start(apInfo, passphrase):
 
         # Starts capturing all the wifi packets that has communicated with AP using tcpdump
         expression = 'wlan addr1 '+ap_mac+' or wlan addr2 '+ap_mac
-        filename = 'session-{}.cap'.format(newSession_obj.id)
-        process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-w', filename, expression], stdin=PIPE, stdout=PIPE)
+        filename = 'output/session-{}.cap'.format(newSession_obj.id)
+        process = Popen(['tcpdump', '-i', options.device, '-l', '-w', filename, expression], stdin=PIPE, stdout=PIPE)
 
         # Updates the process id in newSession_obj
         newSession_obj.processid = process.pid
@@ -71,7 +71,7 @@ def session_upload_create(essid, passphrase, authentication):
 
 def session_upload_decrypt(session_id, essid, passphrase, authentication):
     # Decrypt the encrypted WPA/WPA2 packets
-    filename = 'session-{}.cap'.format(session_id)
+    filename = 'output/session-{}.cap'.format(session_id)
     process = Popen(['airdecap-ng', '-e', essid, filename] + set_authentication_type(authentication, passphrase), stdin=PIPE, stdout=PIPE)
     process.wait()
 
@@ -89,7 +89,7 @@ def session_stop(session_id):
         os.kill(session_obj.processid, signal.SIGINT)
 
         # Decrypt the encrypted WPA/WPA2 packets
-        filename = 'session-{}.cap'.format(session_obj.id)
+        filename = 'output/session-{}.cap'.format(session_obj.id)
         process = Popen(['airdecap-ng', '-e', session_obj.essid, filename] + set_authentication_type(session_obj.privacy, session_obj.passphrase), stdin=PIPE, stdout=PIPE)
         process.wait()
 
@@ -144,8 +144,8 @@ def get_ap_list():
         if os.path.exists('ap-01.csv'):
             os.remove('ap-01.csv')
         # Retrieves AP channel using airodump and output into csv
-        process = Popen(['airodump-ng', 'wlan0', '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
-        sleep(5)
+        process = Popen(['airodump-ng', options.device, '--output-format', 'csv', '-w', 'ap'], stdin=PIPE, stdout=PIPE)
+        sleep(options.time_get_ap_list)
         process.terminate()
         process.kill()
         process.wait()
@@ -182,8 +182,8 @@ def get_client_list(session_id):
             client_list.append(client)
 
         # Retrieves list of clients communicating with AP using airodump and output into csv
-        process = Popen(['airodump-ng', 'wlan0', '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
-        sleep(10) # Time (in seconds) to stop the AP capture
+        process = Popen(['airodump-ng', options.device, '--bssid', ap_mac, '--output-format', 'csv', '-w', 'ap_mac'], stdin=PIPE, stdout=PIPE)
+        sleep(options.time_get_clients_list) # Time (in seconds) to stop the AP capture
         process.terminate()
         process.kill()
         process.wait()
@@ -268,20 +268,20 @@ def eapol_capture_start(session_id, client_data, queue):
     client_mac = client_data['Station MAC']
 
     # Switches channel of wireless adapter
-    Popen(['iwconfig', 'wlan0', 'channel', str(session_obj.channel)], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    Popen(['iwconfig', options.device, 'channel', str(session_obj.channel)], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
     # Filter and capture EAPOL handshake using tcpdump
     expression = 'ether proto 0x888e and (wlan addr1 '+ap_mac+' or wlan addr1 '+client_mac+')'
-    tcpdump_process = Popen(['tcpdump', '-i', 'wlan0', '-l', '-vvv', '--packet-buffered', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    tcpdump_process = Popen(['tcpdump', '-i', options.device, '-l', '-vvv', '--packet-buffered', '-w', 'eapol.cap', expression], stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
     global is_running_process
     is_running_process = True
     while is_running_process:
         # While process is running, sends deauth packet and check if there is EAPOL handshake using cowpatty
-        Popen(['aireplay-ng', '-0', '5', '-a', ap_mac, '-c', client_mac, 'wlan0'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        sleep(10)
+        Popen(['aireplay-ng', '-0', str(options.handshake_no_deauth_packets), '-a', ap_mac, '-c', client_mac, options.device], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        sleep(options.time_handshake_retry)
 
-        # sleep for 10 seconds then check if cowpatty receives it
+        # sleep for x seconds then check if cowpatty receives it
         cowpatty_process = Popen(['cowpatty', '-r', 'eapol.cap', '-c'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, () = cowpatty_process.communicate()
 

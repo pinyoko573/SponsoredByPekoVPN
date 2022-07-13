@@ -120,6 +120,11 @@
             get_protocol(session_id);
             get_timestamp(session_id);
             $("#summary_section").removeClass("d-none");
+
+            $(".collapse-item").each(function() {
+                new_url = $(this).attr("data-url") + '/' + session_id;
+                $(this).attr("href", new_url)
+            });
         }
     });
 
