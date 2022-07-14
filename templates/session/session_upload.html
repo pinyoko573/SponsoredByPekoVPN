@@ -37,8 +37,8 @@
                   <label>Authentication</label>
                   <div class="form-group">
                     <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="authentication" id="radioNone" value="None">
-                      <label class="form-check-label" for="inlineRadio1">None</label>
+                      <input class="form-check-input" type="radio" name="authentication" id="radioNone" value="OPN">
+                      <label class="form-check-label" for="radioNone">OPN (None)</label>
                     </div>
                     <div class="form-check form-check-inline">
                       <input class="form-check-input" type="radio" name="authentication" id="radioWEP" value="WEP">
@@ -54,7 +54,7 @@
                   <div class="form-group">
                     <div class="custom-file">
                       <input type="file" class="custom-file-input" id="inputFile" name="file" accept=".cap,.pcap">
-                      <label class="custom-file-label col-lg-4" for="inputFile">Choose file</label>
+                      <label class="custom-file-label col-lg-4" for="inputFile" id="labelInputFile">Choose file</label>
                     </div>
                   </div>
 
@@ -82,7 +82,9 @@
     $(document).ready(function() {
         // set navigation bar to active
         $('#nav-session').addClass('active');
+    });
 
-        
+    $("input[type=file]").change(function(){
+        $('#labelInputFile').text(($(this).val().split('\\').pop()));
     });
 </script>

@@ -35,7 +35,21 @@
               </div>
               
               <form action="/session/create" method="POST">
-                <div class="input-group mb-3 mt-3 col-lg-4 float-left">
+                <div class="input-group float-left">
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="authentication" id="radioNone" value="OPN" disabled>
+                    <label class="form-check-label" for="radioNone">OPN (None)</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="authentication" id="radioWEP" value="WEP" disabled>
+                    <label class="form-check-label" for="radioWEP">WEP</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="authentication" id="radioWPA" value="WPA" disabled>
+                    <label class="form-check-label" for="radioWPA">WPA/WPA2</label>
+                  </div>
+                </div>
+                <div class="input-group mb-3 mt-3 pl-0 col-lg-4 float-left">
                   <div class="input-group-prepend">
                     <span class="input-group-text" id="basic-addon1">AP Passphrase</span>
                   </div>
@@ -86,15 +100,28 @@
 
     $('#table_id tbody').on('click', 'tr', function(item) {
       if ($(this).hasClass('selected')) {
-            $(this).removeClass('selected');
-            $('#submitButton').addClass('disabled');
-            $('#submitButton').prop('disabled', true);
-        } else {
-            table.$('tr.selected').removeClass('selected');
-            $(this).addClass('selected');
-            $('#submitButton').removeClass('disabled');
-            $('#submitButton').prop('disabled', false);
-            $('#apInfoInput').val(JSON.stringify(table.rows('.selected').data()[0]));
+        $('#radioNone').prop("checked", false);
+        $('#radioWEP').prop("checked", false);
+        $('#radioWPA').prop("checked", false);
+
+        $(this).removeClass('selected');
+        $('#submitButton').addClass('disabled');
+        $('#submitButton').prop('disabled', true);
+      } else {
+        var privacy = table.row(this).data().Privacy;
+        if (privacy.includes("OPN")) {
+          $('#radioNone').prop("checked", true); 
+        } else if (privacy.includes("WEP")) {
+          $('#radioWEP').prop("checked", true); 
+        } else if (privacy.includes("WPA")) {
+          $('#radioWPA').prop("checked", true); 
         }
+
+        table.$('tr.selected').removeClass('selected');
+        $(this).addClass('selected');
+        $('#submitButton').removeClass('disabled');
+        $('#submitButton').prop('disabled', false);
+        $('#apInfoInput').val(JSON.stringify(table.rows('.selected').data()[0]));
+      }
     });
 </script>

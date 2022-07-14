@@ -90,6 +90,11 @@ $(document).ready(function() {
     // Retrieve details if session_id is not null
     if (session_id != null) {
         $("#arp_section").removeClass("d-none");
+
+        $(".collapse-item").each(function() {
+            new_url = $(this).attr("data-url") + '/' + session_id;
+            $(this).attr("href", new_url)
+        });
     }
 });
 

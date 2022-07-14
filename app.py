@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for, flash
 from werkzeug.utils import secure_filename
 import threading, queue
 from packet import decap
@@ -64,7 +64,7 @@ def session_upload():
             file = request.files['file']
             filename = 'session-{}.cap'.format(session_id)
             file.save(secure_filename(filename))
-            session_upload_decrypt(session_id, essid, passphrase)
+            session_upload_decrypt(session_id, essid, passphrase, authentication)
 
             # Finally, decrypt all the packets
             decap(session_id)
@@ -90,6 +90,10 @@ def session_end():
 def session_modify(session_id):
     if request.method == 'GET':
         return render_template('session/session_modify.html', session_id=session_id)
+
+@app.route('/session/download/<path:session_id>')
+def session_download(session_id):
+    return send_from_directory('output', 'session-{}-dec.cap'.format(session_id), as_attachment=True)
 
 @app.route('/session/handshake/start/<session_id>', methods=['POST'])
 def session_handshake_start(session_id):

@@ -40,7 +40,7 @@ def decap(session_id):
 
     # Loops every frame and extract out information
     packet_counter = 0
-    filename = 'session-{}-dec.cap'.format(session_id)
+    filename = 'output/session-{}-dec.cap'.format(session_id)
 
     # Get the starting timestamp of the packet. Number of packets is counted every minute
     start_timestamp = PcapReader(filename).read_packet(0).time
