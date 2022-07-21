@@ -5,7 +5,6 @@
         .carousel-control-prev-icon {
             background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23f00' viewBox='0 0 8 8'%3E%3Cpath d='M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z'/%3E%3C/svg%3E");
         }
-
         .carousel-control-next-icon {
             background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23f00' viewBox='0 0 8 8'%3E%3Cpath d='M2.75 0l-1.5 1.5 2.5 2.5-2.5 2.5 1.5 1.5 4-4-4-4z'/%3E%3C/svg%3E");
         }
@@ -22,27 +21,37 @@
 <body>
   <div id= "wrapper">
     {% include 'sidebar.html' %}
-      <div id="content-wrapper" class="d-flex flex-column">
-          <section id="content">
-            <!-- Some easter egg, remove it when production release-->
-            <div class="position-absolute float-left" style="z-index: 999;">
-                <img id="thegif" src="{{url_for('static', filename='images/noimage.png')}}"/>
-                <audio id="peko">
-                    <source src="{{url_for('static', filename='images/PekoRap.mp3')}}" type="audio/mp3">
-                </audio>
-            </div>
-            <!-- end of easter egg -->
+      <div id="content-wrapper" class="">
+          <div id="fun_content" class="d-flex flex-row">
+              <audio id="peko">
+                  <source src="{{url_for('static', filename='images/PekoRap.mp3')}}" type="audio/mp3">
+              </audio>
 
-            <div class="m-auto p-3 w-50" style="border: 2px solid #924CF3; border-radius:16px;" id="funfactbox">
-                <p style="margin-bottom: 6px; color: #F07533">
-                    <b> Did you know?</b>
-                    <button class="funfactbutton float-right text-primary" style="border: 2px solid #32989C; border-radius: 8px;" onclick="NewFact()">Click for a random fun fact!</button> <br>
-                </p>
-                <p id="random_message"></p>
-            </div>
+              <div class="">
+                  <img id="pekogif_left" src="{{url_for('static', filename='images/noimage.png')}}" />
+              </div>
 
+              <div class="funfactbox" style="border: 2px solid #924CF3; border-radius:16px; width: 60%" id="funfactbox">
+                  <p style="margin-bottom: 6px; color: #F07533">
+                      <br />
+                      <b> Did you know?</b>
+                      <button class="funfactbutton float-right text-primary" style="border: 2px solid #32989C; border-radius: 8px;" onclick="NewFact()">Click for a random fun fact!</button> 
+                      <br>
+                      <br>
+                  </p>
+                  <p id="random_message"></p>
+              </div>
+
+              <div class="">
+                  <img id="pekogif_right" src="{{url_for('static', filename='images/noimage.png')}}" />
+              </div>
+          </div>
+
+          <section id="guide">
+              <br />
+              <h1 style="text-align:center;">Need help? Follow this picture guide below!</h1>
             <div class="mt-4 mx-auto" style="width: 90%">
-                <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+                <div id="carouselExampleIndicators" class="carousel slide" data-interval="false" data-ride="carousel">
                     <ol class="carousel-indicators">
                         <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
                         <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
@@ -127,17 +136,19 @@
         var bgm = document.getElementById("peko");
         bgm.play();
         bgm.volume = 0.3;
-        var img = document.getElementById("thegif");
+        var img = document.getElementById("pekogif_left");
         img.src = "{{url_for('static', filename='images/PekoDance.gif')}}";
-        var guide_img = document.getElementById("carouselExampleIndicators");
+        var img2 = document.getElementById("pekogif_right");
+        img2.src = "{{url_for('static', filename='images/PekoDance.gif')}}";
     }
 
     function StopBGM() {
         var bgm = document.getElementById("peko");
         bgm.pause();
         bgm.currentTime = 0;
-        var img = document.getElementById("thegif");
+        var img = document.getElementById("pekogif_left");
         img.src = "{{url_for('static', filename='images/noimage.png')}}";
-        var guide_img = document.getElementById("carouselExampleIndicators");
+        var img2 = document.getElementById("pekogif_right");
+        img2.src = "{{url_for('static', filename='images/noimage.png')}}";
     }
 </script>
