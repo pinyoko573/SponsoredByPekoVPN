@@ -1,15 +1,32 @@
 <!DOCTYPE html>
 {% include 'header.html' %}
+<head>
+    <style>
+        .carousel-control-prev-icon {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23f00' viewBox='0 0 8 8'%3E%3Cpath d='M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z'/%3E%3C/svg%3E");
+        }
+
+        .carousel-control-next-icon {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23f00' viewBox='0 0 8 8'%3E%3Cpath d='M2.75 0l-1.5 1.5 2.5 2.5-2.5 2.5 1.5 1.5 4-4-4-4z'/%3E%3C/svg%3E");
+        }
+        .carousel-indicators li {
+            background-color: #F06614;
+        }
+        .carousel-inner img {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
 
 <body>
   <div id= "wrapper">
     {% include 'sidebar.html' %}
       <div id="content-wrapper" class="d-flex flex-column">
           <section id="content">
-
             <!-- Some easter egg, remove it when production release-->
             <div class="position-absolute float-left" style="z-index: 999;">
-                <img id="thegif" />
+                <img id="thegif" src="{{url_for('static', filename='images/noimage.png')}}"/>
                 <audio id="peko">
                     <source src="{{url_for('static', filename='images/PekoRap.mp3')}}" type="audio/mp3">
                 </audio>
@@ -17,7 +34,7 @@
             <!-- end of easter egg -->
 
             <div class="m-auto p-3 w-50" style="border: 2px solid #924CF3; border-radius:16px;" id="funfactbox">
-                <p style="margin-bottom: 6px;">
+                <p style="margin-bottom: 6px; color: #F07533">
                     <b> Did you know?</b>
                     <button class="funfactbutton float-right text-primary" style="border: 2px solid #32989C; border-radius: 8px;" onclick="NewFact()">Click for a random fun fact!</button> <br>
                 </p>
@@ -63,13 +80,13 @@
     var length;
 
     const facts = [
-        "It takes one to two minutes to crack into a WEP password",
+        "It takes only one to two minutes to crack a WEP password. Thankfully, most Wi-Fi routers now uses WPA which is much more secure.",
         "The average time to crack into a WPA2 router is around 10 minutes",
         "The latest Wi-Fi encryption, WPA3, was released in July 2020",
-        "The higher the complexity of your password, the longer it takes to crack",
+        "The higher the complexity of your password, the longer it takes to crack. For instance, a generic password can be brute-forced by a dictionary attack in less than a second!",
         "The best place to install an access point/router is at the ceiling",
         "There is a hidden easter egg *somewhere* here. Try finding it!",
-        "and another fun fact",
+        "There are 2 kinds of IP, Public and Private.",
         "We love visualgo",
         "Before we go to the next fact, let us thank our sponsor PekoVPN!",
         "last fact",
@@ -85,7 +102,7 @@
     function NewFact() {
         LoadNewFact(0.091);
         let Displayed_Fact = document.getElementById("random_message").innerHTML;
-        //The Easter Egg ehehe. Can change facts[length] to facts[8] if you wanna proc it more
+        //The Easter Egg ehehe. Can change facts[length] to facts[0] if you wanna proc it more
         if (Displayed_Fact == facts[length]) {
             PlayBGM();
         }
@@ -120,7 +137,7 @@
         bgm.pause();
         bgm.currentTime = 0;
         var img = document.getElementById("thegif");
-        img.src = "";
+        img.src = "{{url_for('static', filename='images/noimage.png')}}";
         var guide_img = document.getElementById("carouselExampleIndicators");
     }
 </script>
