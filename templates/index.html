@@ -15,6 +15,15 @@
             width: 100%;
             height: 100%;
         }
+        .title {
+            font-family: 'Faster One', cursive;
+        }
+
+        @media only screen and (min-width: 1200px) {
+            .funfactbutton {
+                float: right;
+            }
+        }
     </style>
 </head>
 
@@ -27,29 +36,29 @@
                   <source src="{{url_for('static', filename='images/PekoRap.mp3')}}" type="audio/mp3">
               </audio>
 
-              <div class="">
-                  <img id="pekogif_left" src="{{url_for('static', filename='images/noimage.png')}}" />
+              <div>
+                  <img id="pekogif_left" style="max-width: 100%; height: auto;"/>
               </div>
 
-              <div class="funfactbox" style="border: 2px solid #924CF3; border-radius:16px; width: 60%" id="funfactbox">
-                  <p style="margin-bottom: 6px; color: #F07533">
-                      <br />
-                      <b> Did you know?</b>
-                      <button class="funfactbutton float-right text-primary" style="border: 2px solid #32989C; border-radius: 8px;" onclick="NewFact()">Click for a random fun fact!</button> 
-                      <br>
-                      <br>
-                  </p>
-                  <p id="random_message"></p>
+              <div class="funfactbox" style="border: 2px solid #924CF3; border-radius:16px; width: 50%; margin: 0 auto; padding: 10px;" id="funfactbox">
+                <div style="position: relative; color: #F07533">
+                    <b>Did you know?</b>
+                    <button class="funfactbutton text-primary" style="border: 2px solid #32989C; border-radius: 8px;" onclick="NewFact()">Click for a random fun fact!</button>
+                </div>
+                <div id="random_message" style="margin-top: 10px;"></div>
               </div>
 
-              <div class="">
-                  <img id="pekogif_right" src="{{url_for('static', filename='images/noimage.png')}}" />
+              <div>
+                  <img id="pekogif_right" style="max-width: 100%; height: auto;"/>
               </div>
           </div>
 
-          <section id="guide">
-              <br />
-              <h1 style="text-align:center;">Need help? Follow this picture guide below!</h1>
+          <section id="guide" style="text-align:center; margin-top: 20px;">
+            <h1>Welcome to
+                <span class="title" style="color:#001ae3">Wifi</span>
+                <span class="title" style="color:#ff0000">Guard</span>
+            </h1>
+            <h3>Need help? Follow this picture guide below!</h3>
             <div class="mt-4 mx-auto" style="width: 90%">
                 <div id="carouselExampleIndicators" class="carousel slide" data-interval="false" data-ride="carousel">
                     <ol class="carousel-indicators">
@@ -62,10 +71,10 @@
                             <img style="display: block; width: 100%;" src="{{url_for('static', filename='images/GuidePage1.png')}}" alt="First slide">
                         </div>
                         <div class="carousel-item">
-                            <img style="display: block; width: 100%" src="{{url_for('static', filename='images/GuidePage2.png')}}" alt="Second slide">
+                            <img style="display: block; width: 100%;" src="{{url_for('static', filename='images/GuidePage2.png')}}" alt="Second slide">
                         </div>
                         <div class="carousel-item">
-                            <img style="display: block; width: 100%" src="{{url_for('static', filename='images/GuidePage3.png')}}" alt="Third slide">
+                            <img style="display: block; width: 100%;" src="{{url_for('static', filename='images/GuidePage3.png')}}" alt="Third slide">
                         </div>
                     </div>
                     <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
@@ -87,24 +96,20 @@
 
 <script>
     var length;
-
-    const facts = [
-        "It takes only one to two minutes to crack a WEP password. Thankfully, most Wi-Fi routers now uses WPA which is much more secure.",
-        "The average time to crack into a WPA2 router is around 10 minutes",
-        "The latest Wi-Fi encryption, WPA3, was released in July 2020",
-        "The higher the complexity of your password, the longer it takes to crack. For instance, a generic password can be brute-forced by a dictionary attack in less than a second!",
-        "The best place to install an access point/router is at the ceiling",
-        "There is a hidden easter egg *somewhere* here. Try finding it!",
-        "There are 2 kinds of IP, Public and Private.",
-        "We love visualgo",
-        "Before we go to the next fact, let us thank our sponsor PekoVPN!",
-        "last fact",
-        "Secret easter egg fact that only appeares with 1% chance. Congrats peko!"
-    ];
+    var facts;
 
     $(document).ready(function() {
-        length = facts.length - 1;
         $('.carousel').carousel();
+        $.ajax({
+            url: "/get_facts",
+            async: false,
+            method: "GET",
+            success: function(result) {
+                facts = result;
+            }
+        })
+        length = facts.length - 1;
+
         document.getElementById("random_message").onload = NewFact(0);
     });
 

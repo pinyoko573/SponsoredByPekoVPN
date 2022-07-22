@@ -20,6 +20,10 @@ is_running_process = False
 def index():
     return render_template('index.html')
 
+@app.route('/get_facts')
+def get_facts():
+    return jsonify(messages.facts)
+
 @app.route('/session')
 def session():
     return render_template('session/session_index.html')
