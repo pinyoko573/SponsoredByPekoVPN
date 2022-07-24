@@ -66,7 +66,7 @@ def session_upload():
             
             # Get file and save, then decrypt file and scan all mac addresses
             file = request.files['file']
-            filename = 'session-{}.cap'.format(session_id)
+            filename = 'output/session-{}.cap'.format(session_id)
             file.save(secure_filename(filename))
             session_upload_decrypt(session_id, essid, passphrase, authentication)
 
