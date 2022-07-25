@@ -262,7 +262,7 @@ def dns_insert(session_id):
 
 def scan_macadress(session_id):
     # Scans the entire packets and collects all MAC addresses
-    filename = 'session-{}-dec.cap'.format(session_id)
+    filename = 'output/session-{}-dec.cap'.format(session_id)
 
     clients_list = {}
 
