@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for, flash
 from werkzeug.utils import secure_filename
 import threading, queue
+import os
 from packet import decap
 from session import get_is_active, get_session_list, session_erase, session_start, get_ap_list, get_client_list, eapol_capture_start, eapol_capture_stop, session_stop, session_upload_create, session_upload_decrypt
 from pstatistics import get_arp_list, get_clients, get_dns_list, get_protocol_list, get_timestamp_list, get_website_list
@@ -12,13 +13,20 @@ from database import engine, Base
 # Only use this when you want to generate database!
 # Base.metadata.create_all(bind=engine)
 
+UPLOAD_FOLDER = 'output/'
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 is_running_process = False
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/get_facts')
+def get_facts():
+    return jsonify(messages.facts)
 
 @app.route('/session')
 def session():
@@ -63,7 +71,7 @@ def session_upload():
             # Get file and save, then decrypt file and scan all mac addresses
             file = request.files['file']
             filename = 'session-{}.cap'.format(session_id)
-            file.save(secure_filename(filename))
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(filename)))
             session_upload_decrypt(session_id, essid, passphrase, authentication)
 
             # Finally, decrypt all the packets
