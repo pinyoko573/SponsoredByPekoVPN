@@ -1,7 +1,7 @@
 # WifiGuard
 
 ## Description
-Simple wireless network analyser tool made in Python for analysing basic information such as traffic, protocols, websites, ARP and DNS.
+Fun and simple wireless network analyser tool made in Python for capturing client's network information (traffic, protocols, websites, ARP and DNS) through **eavesdropping**.
 
 ## How it works
 
@@ -9,10 +9,11 @@ Simple wireless network analyser tool made in Python for analysing basic informa
 
 ## Features
 - Scans for AP and Clients that are connected to the AP
-- Capture EAPOL packet through deauthentication attacks
+- Captures EAPOL packet through deauthentication attacks
 - View traffic (Packet count, protocols) and ARP & DNS information
-- Detect ARP and DNS attacks (through conflict and comparison with external DNS respectively)
+- Collates list of websites that clients have visited
 - Saves decrypted capture file
+<!-- - Detect ARP and DNS attacks (through conflict and comparison with external DNS respectively) -->
 
 ## How it works
 
